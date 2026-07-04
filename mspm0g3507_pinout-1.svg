@@ -111,9 +111,9 @@
     <path class="wire enc" d="M500 172 C420 172 392 172 354 172"/><rect class="enc" x="178" y="156" width="176" height="30" rx="6"/><text class="labelText" x="266" y="176" text-anchor="middle">驱动板 E2B/右B</text>
     <path class="wire motor" d="M500 214 C420 214 392 214 354 214"/><rect class="motor" x="178" y="198" width="176" height="30" rx="6"/><text class="labelText" x="266" y="218" text-anchor="middle">驱动板 AIN2</text>
     <path class="wire motor" d="M500 256 C420 256 392 256 354 256"/><rect class="motor" x="178" y="240" width="176" height="30" rx="6"/><text class="labelText" x="266" y="260" text-anchor="middle">驱动板 BIN1</text>
-    <path class="wire line" d="M500 424 C420 424 392 424 354 424"/><rect class="line" x="198" y="408" width="156" height="30" rx="6"/><text class="labelText" x="276" y="428" text-anchor="middle">循迹 S1 最左</text>
-    <path class="wire line" d="M500 466 C420 466 392 466 354 466"/><rect class="line" x="198" y="450" width="156" height="30" rx="6"/><text class="labelText" x="276" y="470" text-anchor="middle">循迹 S7 最右</text>
-    <path class="wire line" d="M500 508 C420 508 392 508 354 508"/><rect class="line" x="198" y="492" width="156" height="30" rx="6"/><text class="labelText" x="276" y="512" text-anchor="middle">循迹 S6 右2</text>
+    <path class="wire line" d="M500 424 C420 424 392 424 354 424"/><rect class="line" x="198" y="408" width="156" height="30" rx="6"/><text class="labelText" x="276" y="428" text-anchor="middle">循迹 S7 最右</text>
+    <path class="wire line" d="M500 466 C420 466 392 466 354 466"/><rect class="line" x="198" y="450" width="156" height="30" rx="6"/><text class="labelText" x="276" y="470" text-anchor="middle">循迹 S6 右2</text>
+    <path class="wire line" d="M500 508 C420 508 392 508 354 508"/><rect class="line" x="198" y="492" width="156" height="30" rx="6"/><text class="labelText" x="276" y="512" text-anchor="middle">循迹 S5 右1</text>
     <path class="wire motor" d="M500 550 C420 550 392 550 354 550"/><rect class="motor" x="178" y="534" width="176" height="30" rx="6"/><text class="labelText" x="266" y="554" text-anchor="middle">驱动板 AIN1</text>
     <path class="wire i2c" d="M500 592 C420 592 392 592 354 592"/><rect class="i2c" x="198" y="576" width="156" height="30" rx="6"/><text class="labelText" x="276" y="596" text-anchor="middle">IMU SCL</text>
     <path class="wire i2c" d="M500 634 C420 634 392 634 354 634"/><rect class="i2c" x="198" y="618" width="156" height="30" rx="6"/><text class="labelText" x="276" y="638" text-anchor="middle">IMU SDA</text>
@@ -132,10 +132,10 @@
     <path class="wire motor" d="M680 424 C760 424 792 424 826 424"/><rect class="motor" x="826" y="408" width="166" height="30" rx="6"/><text class="labelText" x="909" y="428" text-anchor="middle">驱动板 BIN2</text>
     <path class="wire motor" d="M680 466 C760 466 792 466 826 466"/><rect class="motor" x="826" y="450" width="166" height="30" rx="6"/><text class="labelText" x="909" y="470" text-anchor="middle">驱动板 PWMB</text>
     <path class="wire motor" d="M680 508 C760 508 792 508 826 508"/><rect class="motor" x="826" y="492" width="166" height="30" rx="6"/><text class="labelText" x="909" y="512" text-anchor="middle">驱动板 PWMA</text>
-    <path class="wire line" d="M680 550 C760 550 792 550 826 550"/><rect class="line" x="826" y="534" width="150" height="30" rx="6"/><text class="labelText" x="901" y="554" text-anchor="middle">循迹 S5 右1</text>
-    <path class="wire line" d="M680 592 C760 592 792 592 826 592"/><rect class="line" x="826" y="576" width="150" height="30" rx="6"/><text class="labelText" x="901" y="596" text-anchor="middle">循迹 S4 中间</text>
-    <path class="wire line" d="M680 634 C760 634 792 634 826 634"/><rect class="line" x="826" y="618" width="150" height="30" rx="6"/><text class="labelText" x="901" y="638" text-anchor="middle">循迹 S3 左1</text>
-    <path class="wire line" d="M680 676 C760 676 792 676 826 676"/><rect class="line" x="826" y="660" width="150" height="30" rx="6"/><text class="labelText" x="901" y="680" text-anchor="middle">循迹 S2 左2</text>
+    <path class="wire line" d="M680 550 C760 550 792 550 826 550"/><rect class="line" x="826" y="534" width="150" height="30" rx="6"/><text class="labelText" x="901" y="554" text-anchor="middle">循迹 S4 中间</text>
+    <path class="wire line" d="M680 592 C760 592 792 592 826 592"/><rect class="line" x="826" y="576" width="150" height="30" rx="6"/><text class="labelText" x="901" y="596" text-anchor="middle">循迹 S3 左1</text>
+    <path class="wire line" d="M680 634 C760 634 792 634 826 634"/><rect class="line" x="826" y="618" width="150" height="30" rx="6"/><text class="labelText" x="901" y="638" text-anchor="middle">循迹 S2 左2</text>
+    <path class="wire line" d="M680 676 C760 676 792 676 826 676"/><rect class="line" x="826" y="660" width="150" height="30" rx="6"/><text class="labelText" x="901" y="680" text-anchor="middle">循迹 S1 最左</text>
     <path class="wire oled" d="M680 718 C760 718 792 718 826 718"/><rect class="oled" x="826" y="702" width="150" height="30" rx="6"/><text class="labelText" x="901" y="722" text-anchor="middle">板载 OLED 灯</text>
     <path class="wire can" d="M680 760 C760 760 792 760 826 760"/><rect class="can" x="826" y="744" width="150" height="30" rx="6"/><text class="labelText" x="901" y="764" text-anchor="middle">CAN RX</text>
     <path class="wire can" d="M680 802 C760 802 792 802 826 802"/><rect class="can" x="826" y="786" width="150" height="30" rx="6"/><text class="labelText" x="901" y="806" text-anchor="middle">CAN TX</text>

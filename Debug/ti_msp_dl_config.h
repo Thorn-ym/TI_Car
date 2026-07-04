@@ -142,34 +142,34 @@ extern "C" {
 /* Defines for BIN2: GPIOA.21 with pinCMx 46 on package pin 17 */
 #define GPIO_MOTOR_BIN2_PIN                                     (DL_GPIO_PIN_21)
 #define GPIO_MOTOR_BIN2_IOMUX                                    (IOMUX_PINCM46)
-/* Defines for S1: GPIOB.20 with pinCMx 48 on package pin 19 */
-#define GPIO_LINE_S1_PORT                                                (GPIOB)
-#define GPIO_LINE_S1_PIN                                        (DL_GPIO_PIN_20)
-#define GPIO_LINE_S1_IOMUX                                       (IOMUX_PINCM48)
-/* Defines for S2: GPIOA.15 with pinCMx 37 on package pin 8 */
+/* Defines for S1: GPIOA.15 with pinCMx 37 on package pin 8 */
+#define GPIO_LINE_S1_PORT                                                (GPIOA)
+#define GPIO_LINE_S1_PIN                                        (DL_GPIO_PIN_15)
+#define GPIO_LINE_S1_IOMUX                                       (IOMUX_PINCM37)
+/* Defines for S2: GPIOA.16 with pinCMx 38 on package pin 9 */
 #define GPIO_LINE_S2_PORT                                                (GPIOA)
-#define GPIO_LINE_S2_PIN                                        (DL_GPIO_PIN_15)
-#define GPIO_LINE_S2_IOMUX                                       (IOMUX_PINCM37)
-/* Defines for S3: GPIOA.16 with pinCMx 38 on package pin 9 */
+#define GPIO_LINE_S2_PIN                                        (DL_GPIO_PIN_16)
+#define GPIO_LINE_S2_IOMUX                                       (IOMUX_PINCM38)
+/* Defines for S3: GPIOA.17 with pinCMx 39 on package pin 10 */
 #define GPIO_LINE_S3_PORT                                                (GPIOA)
-#define GPIO_LINE_S3_PIN                                        (DL_GPIO_PIN_16)
-#define GPIO_LINE_S3_IOMUX                                       (IOMUX_PINCM38)
-/* Defines for S4: GPIOA.17 with pinCMx 39 on package pin 10 */
+#define GPIO_LINE_S3_PIN                                        (DL_GPIO_PIN_17)
+#define GPIO_LINE_S3_IOMUX                                       (IOMUX_PINCM39)
+/* Defines for S4: GPIOA.18 with pinCMx 40 on package pin 11 */
 #define GPIO_LINE_S4_PORT                                                (GPIOA)
-#define GPIO_LINE_S4_PIN                                        (DL_GPIO_PIN_17)
-#define GPIO_LINE_S4_IOMUX                                       (IOMUX_PINCM39)
-/* Defines for S5: GPIOA.18 with pinCMx 40 on package pin 11 */
-#define GPIO_LINE_S5_PORT                                                (GPIOA)
+#define GPIO_LINE_S4_PIN                                        (DL_GPIO_PIN_18)
+#define GPIO_LINE_S4_IOMUX                                       (IOMUX_PINCM40)
+/* Defines for S5: GPIOB.18 with pinCMx 44 on package pin 15 */
+#define GPIO_LINE_S5_PORT                                                (GPIOB)
 #define GPIO_LINE_S5_PIN                                        (DL_GPIO_PIN_18)
-#define GPIO_LINE_S5_IOMUX                                       (IOMUX_PINCM40)
-/* Defines for S6: GPIOB.18 with pinCMx 44 on package pin 15 */
+#define GPIO_LINE_S5_IOMUX                                       (IOMUX_PINCM44)
+/* Defines for S6: GPIOB.19 with pinCMx 45 on package pin 16 */
 #define GPIO_LINE_S6_PORT                                                (GPIOB)
-#define GPIO_LINE_S6_PIN                                        (DL_GPIO_PIN_18)
-#define GPIO_LINE_S6_IOMUX                                       (IOMUX_PINCM44)
-/* Defines for S7: GPIOB.19 with pinCMx 45 on package pin 16 */
+#define GPIO_LINE_S6_PIN                                        (DL_GPIO_PIN_19)
+#define GPIO_LINE_S6_IOMUX                                       (IOMUX_PINCM45)
+/* Defines for S7: GPIOB.20 with pinCMx 48 on package pin 19 */
 #define GPIO_LINE_S7_PORT                                                (GPIOB)
-#define GPIO_LINE_S7_PIN                                        (DL_GPIO_PIN_19)
-#define GPIO_LINE_S7_IOMUX                                       (IOMUX_PINCM45)
+#define GPIO_LINE_S7_PIN                                        (DL_GPIO_PIN_20)
+#define GPIO_LINE_S7_IOMUX                                       (IOMUX_PINCM48)
 /* Port definition for Pin Group GPIO_ENCODER */
 #define GPIO_ENCODER_PORT                                                (GPIOA)
 
