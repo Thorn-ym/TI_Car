@@ -49,7 +49,7 @@ GPIO_LINE_CFG.associatedPins.create(7);
 GPIO_LINE_CFG.associatedPins[0].$name = "S1";
 GPIO_LINE_CFG.associatedPins[0].direction = "INPUT";
 GPIO_LINE_CFG.associatedPins[0].internalResistor = "PULL_UP";
-GPIO_LINE_CFG.associatedPins[0].pin.$assign = "PA14";
+GPIO_LINE_CFG.associatedPins[0].pin.$assign = "PB20";
 GPIO_LINE_CFG.associatedPins[1].$name = "S2";
 GPIO_LINE_CFG.associatedPins[1].direction = "INPUT";
 GPIO_LINE_CFG.associatedPins[1].internalResistor = "PULL_UP";

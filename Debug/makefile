@@ -131,7 +131,7 @@ all: $(OBJS) $(GEN_CMDS)
 # Tool invocations
 TI_Car_no_buletooth.out: $(OBJS) $(GEN_CMDS)
 	@echo 'Arm Linker - building target: "$@"'
-	"F:/TI/ccstheia/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/bin/tiarmclang.exe" @"device.opt"  -march=thumbv6m -mcpu=cortex-m0plus -mfloat-abi=soft -mlittle-endian -mthumb -O2 -gdwarf-3 -Wall -Wl,-m"TI_Car_no_buletooth.map" -Wl,-i"F:/TI/mspm0_sdk_2_10_00_04/source" -Wl,-i"C:/Users/Thorn/workspace_ccstheia/TI_Car_no_buletooth" -Wl,-i"C:/Users/Thorn/workspace_ccstheia/TI_Car_no_buletooth/Debug/syscfg" -Wl,-i"F:/TI/ccstheia/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/lib" -Wl,--diag_wrap=off -Wl,--display_error_number -Wl,--warn_sections -Wl,--xml_link_info="TI_Car_no_buletooth_linkInfo.xml" -Wl,--rom_model -o "TI_Car_no_buletooth.out" $(ORDERED_OBJS)
+	"F:/TI/ccstheia/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/bin/tiarmclang.exe" @"device.opt"  -march=thumbv6m -mcpu=cortex-m0plus -mfloat-abi=soft -mlittle-endian -mthumb -O2 -gdwarf-3 -Wall -Wl,-m"TI_Car_no_buletooth.map" -Wl,-i"F:/TI/mspm0_sdk_2_10_00_04/source" -Wl,-i"C:/Users/Thorn/workspace_ccstheia/TI_Car" -Wl,-i"C:/Users/Thorn/workspace_ccstheia/TI_Car/Debug/syscfg" -Wl,-i"F:/TI/ccstheia/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/lib" -Wl,--diag_wrap=off -Wl,--display_error_number -Wl,--warn_sections -Wl,--xml_link_info="TI_Car_no_buletooth_linkInfo.xml" -Wl,--rom_model -o "TI_Car_no_buletooth.out" $(ORDERED_OBJS)
 	@echo 'Finished building target: "$@"'
 	@echo ' '
 

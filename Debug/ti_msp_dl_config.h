@@ -142,10 +142,10 @@ extern "C" {
 /* Defines for BIN2: GPIOA.21 with pinCMx 46 on package pin 17 */
 #define GPIO_MOTOR_BIN2_PIN                                     (DL_GPIO_PIN_21)
 #define GPIO_MOTOR_BIN2_IOMUX                                    (IOMUX_PINCM46)
-/* Defines for S1: GPIOA.14 with pinCMx 36 on package pin 7 */
-#define GPIO_LINE_S1_PORT                                                (GPIOA)
-#define GPIO_LINE_S1_PIN                                        (DL_GPIO_PIN_14)
-#define GPIO_LINE_S1_IOMUX                                       (IOMUX_PINCM36)
+/* Defines for S1: GPIOB.20 with pinCMx 48 on package pin 19 */
+#define GPIO_LINE_S1_PORT                                                (GPIOB)
+#define GPIO_LINE_S1_PIN                                        (DL_GPIO_PIN_20)
+#define GPIO_LINE_S1_IOMUX                                       (IOMUX_PINCM48)
 /* Defines for S2: GPIOA.15 with pinCMx 37 on package pin 8 */
 #define GPIO_LINE_S2_PORT                                                (GPIOA)
 #define GPIO_LINE_S2_PIN                                        (DL_GPIO_PIN_15)
