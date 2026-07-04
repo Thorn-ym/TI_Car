@@ -1,0 +1,116 @@
+/**
+ * These arguments were used when this file was generated. They will be automatically applied on subsequent loads
+ * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
+ */
+//@cliArgs --device "MSPM0G350X" --package "LQFP-64(PM)" --part "Default"
+//@v2CliArgs --device "MSPM0G3507" --package "LQFP-64(PM)"
+// @cliArgs --board /ti/boards/LP_MSPM0G3507 --rtos nortos
+
+/**
+ * Import the modules used in this configuration.
+ */
+const GPIO = scripting.addModule("/ti/driverlib/GPIO", {}, false);
+const GPIO_MOTOR_CFG = GPIO.addInstance();
+const GPIO_LINE_CFG = GPIO.addInstance();
+const GPIO_ENCODER_CFG = GPIO.addInstance();
+const PWM = scripting.addModule("/ti/driverlib/PWM", {}, false);
+const PWM_MOTOR_CFG = PWM.addInstance();
+const QEI = scripting.addModule("/ti/driverlib/QEI", {}, false);
+const QEI_LEFT_CFG = QEI.addInstance();
+const SYSCTL = scripting.addModule("/ti/driverlib/SYSCTL");
+const TIMER = scripting.addModule("/ti/driverlib/TIMER", {}, false);
+const TIMER_CONTROL_CFG = TIMER.addInstance();
+
+/**
+ * Write custom configuration values to the imported modules.
+ */
+const Board = scripting.addModule("/ti/driverlib/Board", {}, false);
+
+GPIO_MOTOR_CFG.$name = "GPIO_MOTOR";
+GPIO_MOTOR_CFG.associatedPins.create(5);
+GPIO_MOTOR_CFG.associatedPins[0].$name = "AIN1";
+GPIO_MOTOR_CFG.associatedPins[0].initialValue = "CLEARED";
+GPIO_MOTOR_CFG.associatedPins[0].pin.$assign = "PA7";
+GPIO_MOTOR_CFG.associatedPins[1].$name = "AIN2";
+GPIO_MOTOR_CFG.associatedPins[1].initialValue = "CLEARED";
+GPIO_MOTOR_CFG.associatedPins[1].pin.$assign = "PA28";
+GPIO_MOTOR_CFG.associatedPins[2].$name = "STBY";
+GPIO_MOTOR_CFG.associatedPins[2].initialValue = "CLEARED";
+GPIO_MOTOR_CFG.associatedPins[2].pin.$assign = "PA22";
+GPIO_MOTOR_CFG.associatedPins[3].$name = "BIN1";
+GPIO_MOTOR_CFG.associatedPins[3].initialValue = "CLEARED";
+GPIO_MOTOR_CFG.associatedPins[3].pin.$assign = "PA31";
+GPIO_MOTOR_CFG.associatedPins[4].$name = "BIN2";
+GPIO_MOTOR_CFG.associatedPins[4].initialValue = "CLEARED";
+GPIO_MOTOR_CFG.associatedPins[4].pin.$assign = "PA21";
+
+GPIO_LINE_CFG.$name = "GPIO_LINE";
+GPIO_LINE_CFG.associatedPins.create(7);
+GPIO_LINE_CFG.associatedPins[0].$name = "S1";
+GPIO_LINE_CFG.associatedPins[0].direction = "INPUT";
+GPIO_LINE_CFG.associatedPins[0].internalResistor = "PULL_UP";
+GPIO_LINE_CFG.associatedPins[0].pin.$assign = "PA14";
+GPIO_LINE_CFG.associatedPins[1].$name = "S2";
+GPIO_LINE_CFG.associatedPins[1].direction = "INPUT";
+GPIO_LINE_CFG.associatedPins[1].internalResistor = "PULL_UP";
+GPIO_LINE_CFG.associatedPins[1].pin.$assign = "PA15";
+GPIO_LINE_CFG.associatedPins[2].$name = "S3";
+GPIO_LINE_CFG.associatedPins[2].direction = "INPUT";
+GPIO_LINE_CFG.associatedPins[2].internalResistor = "PULL_UP";
+GPIO_LINE_CFG.associatedPins[2].pin.$assign = "PA16";
+GPIO_LINE_CFG.associatedPins[3].$name = "S4";
+GPIO_LINE_CFG.associatedPins[3].direction = "INPUT";
+GPIO_LINE_CFG.associatedPins[3].internalResistor = "PULL_UP";
+GPIO_LINE_CFG.associatedPins[3].pin.$assign = "PA17";
+GPIO_LINE_CFG.associatedPins[4].$name = "S5";
+GPIO_LINE_CFG.associatedPins[4].direction = "INPUT";
+GPIO_LINE_CFG.associatedPins[4].internalResistor = "PULL_UP";
+GPIO_LINE_CFG.associatedPins[4].pin.$assign = "PA18";
+GPIO_LINE_CFG.associatedPins[5].$name = "S6";
+GPIO_LINE_CFG.associatedPins[5].direction = "INPUT";
+GPIO_LINE_CFG.associatedPins[5].internalResistor = "PULL_UP";
+GPIO_LINE_CFG.associatedPins[5].pin.$assign = "PB18";
+GPIO_LINE_CFG.associatedPins[6].$name = "S7";
+GPIO_LINE_CFG.associatedPins[6].direction = "INPUT";
+GPIO_LINE_CFG.associatedPins[6].internalResistor = "PULL_UP";
+GPIO_LINE_CFG.associatedPins[6].pin.$assign = "PB19";
+
+GPIO_ENCODER_CFG.$name = "GPIO_ENCODER";
+GPIO_ENCODER_CFG.associatedPins.create(2);
+GPIO_ENCODER_CFG.associatedPins[0].$name = "E2A";
+GPIO_ENCODER_CFG.associatedPins[0].direction = "INPUT";
+GPIO_ENCODER_CFG.associatedPins[0].interruptEn = true;
+GPIO_ENCODER_CFG.associatedPins[0].polarity = "RISE_FALL";
+GPIO_ENCODER_CFG.associatedPins[0].pin.$assign = "PA0";
+GPIO_ENCODER_CFG.associatedPins[1].$name = "E2B";
+GPIO_ENCODER_CFG.associatedPins[1].direction = "INPUT";
+GPIO_ENCODER_CFG.associatedPins[1].interruptEn = true;
+GPIO_ENCODER_CFG.associatedPins[1].polarity = "RISE_FALL";
+GPIO_ENCODER_CFG.associatedPins[1].pin.$assign = "PA1";
+
+PWM_MOTOR_CFG.$name = "PWM_0";
+PWM_MOTOR_CFG.pwmMode = "EDGE_ALIGN_UP";
+PWM_MOTOR_CFG.clockPrescale = 1;
+PWM_MOTOR_CFG.timerCount = 3200;
+PWM_MOTOR_CFG.peripheral.$assign = "TIMA0";
+PWM_MOTOR_CFG.peripheral.ccp0Pin.$assign = "PB8";
+PWM_MOTOR_CFG.peripheral.ccp1Pin.$assign = "PB9";
+PWM_MOTOR_CFG.PWM_CHANNEL_0.$name = "ti_driverlib_pwm_PWMTimerCC0";
+PWM_MOTOR_CFG.PWM_CHANNEL_0.ccValue = 0;
+PWM_MOTOR_CFG.PWM_CHANNEL_1.$name = "ti_driverlib_pwm_PWMTimerCC1";
+PWM_MOTOR_CFG.PWM_CHANNEL_1.ccValue = 0;
+
+QEI_LEFT_CFG.$name = "QEI_0";
+QEI_LEFT_CFG.peripheral.$assign = "TIMG8";
+QEI_LEFT_CFG.peripheral.ccp0Pin.$assign = "PB6";
+QEI_LEFT_CFG.peripheral.ccp1Pin.$assign = "PB7";
+
+SYSCTL.forceDefaultClkConfig = true;
+SYSCTL.clockTreeEn = true;
+
+TIMER_CONTROL_CFG.$name = "TIMER_CONTROL";
+TIMER_CONTROL_CFG.timerPeriod = "10 ms";
+TIMER_CONTROL_CFG.timerMode = "PERIODIC";
+TIMER_CONTROL_CFG.interrupts = ["ZERO"];
+TIMER_CONTROL_CFG.timerClkPrescale = 1;
+TIMER_CONTROL_CFG.peripheral.$assign = "TIMG12";
