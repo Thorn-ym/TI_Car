@@ -20,6 +20,8 @@ const QEI_LEFT_CFG = QEI.addInstance();
 const SYSCTL = scripting.addModule("/ti/driverlib/SYSCTL");
 const TIMER = scripting.addModule("/ti/driverlib/TIMER", {}, false);
 const TIMER_CONTROL_CFG = TIMER.addInstance();
+const UART = scripting.addModule("/ti/driverlib/UART", {}, false);
+const UART_DEBUG_CFG = UART.addInstance();
 
 /**
  * Write custom configuration values to the imported modules.
@@ -114,3 +116,13 @@ TIMER_CONTROL_CFG.timerMode = "PERIODIC";
 TIMER_CONTROL_CFG.interrupts = ["ZERO"];
 TIMER_CONTROL_CFG.timerClkPrescale = 1;
 TIMER_CONTROL_CFG.peripheral.$assign = "TIMG12";
+
+UART_DEBUG_CFG.$name = "UART_DEBUG";
+UART_DEBUG_CFG.profile = "CONFIG_PROFILE_1";
+UART_DEBUG_CFG.peripheral.$assign = "UART1";
+UART_DEBUG_CFG.targetBaudRate = 9600;
+UART_DEBUG_CFG.enableInternalLoopback = false;
+UART_DEBUG_CFG.enableFIFO = false;
+UART_DEBUG_CFG.enabledInterrupts = ["RX"];
+UART_DEBUG_CFG.peripheral.txPin.$assign = "PA8";
+UART_DEBUG_CFG.peripheral.rxPin.$assign = "PA9";

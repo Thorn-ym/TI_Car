@@ -18,5 +18,10 @@
       "directory" : "C:/Users/Thorn/workspace_ccstheia/TI_Car/Debug",
       "command"   : "clang++ -D__MSPM0G3507__ -D__USE_SYSCONFIG__ -I\"C:/Users/Thorn/workspace_ccstheia/TI_Car\" -I\"C:/Users/Thorn/workspace_ccstheia/TI_Car/Debug\" -I\"F:/TI/mspm0_sdk_2_10_00_04/source/third_party/CMSIS/Core/Include\" -I\"F:/TI/mspm0_sdk_2_10_00_04/source\" -isystem\"F:/TI/ccstheia/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"F:/TI/ccstheia/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c++/v1\" -isystem\"F:/TI/ccstheia/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/lib/clang/18/include\" -isystem\"F:/TI/ccstheia/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c\" -xc",
       "file"      : "C:/Users/Thorn/workspace_ccstheia/TI_Car/line_tracker.c"
+   },
+   {
+      "directory" : "C:/Users/Thorn/workspace_ccstheia/TI_Car/Debug",
+      "command"   : "clang++ -D__MSPM0G3507__ -D__USE_SYSCONFIG__ -I\"C:/Users/Thorn/workspace_ccstheia/TI_Car\" -I\"C:/Users/Thorn/workspace_ccstheia/TI_Car/Debug\" -I\"F:/TI/mspm0_sdk_2_10_00_04/source/third_party/CMSIS/Core/Include\" -I\"F:/TI/mspm0_sdk_2_10_00_04/source\" -isystem\"F:/TI/ccstheia/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"F:/TI/ccstheia/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c++/v1\" -isystem\"F:/TI/ccstheia/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/lib/clang/18/include\" -isystem\"F:/TI/ccstheia/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c\" -xc",
+      "file"      : "C:/Users/Thorn/workspace_ccstheia/TI_Car/debug_uart.c"
    }
 ]

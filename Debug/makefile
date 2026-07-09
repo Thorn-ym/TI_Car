@@ -11,6 +11,7 @@ GEN_CMDS__FLAG := -Wl,-l"./device_linker.cmd"
 
 ORDERED_OBJS += \
 "./car_control.o" \
+"./debug_uart.o" \
 "./empty.o" \
 "./ti_msp_dl_config.o" \
 "./startup_mspm0g350x_ticlang.o" \
@@ -138,8 +139,8 @@ TI_Car_no_buletooth.out: $(OBJS) $(GEN_CMDS)
 # Other Targets
 clean:
 	-$(RM) $(GEN_MISC_FILES__QUOTED)$(GEN_FILES__QUOTED)$(EXE_OUTPUTS__QUOTED)
-	-$(RM) "car_control.o" "empty.o" "ti_msp_dl_config.o" "startup_mspm0g350x_ticlang.o" "line_tracker.o" 
-	-$(RM) "car_control.d" "empty.d" "ti_msp_dl_config.d" "startup_mspm0g350x_ticlang.d" "line_tracker.d" 
+	-$(RM) "car_control.o" "debug_uart.o" "empty.o" "ti_msp_dl_config.o" "startup_mspm0g350x_ticlang.o" "line_tracker.o" 
+	-$(RM) "car_control.d" "debug_uart.d" "empty.d" "ti_msp_dl_config.d" "startup_mspm0g350x_ticlang.d" "line_tracker.d" 
 	-@echo ' '
 
 .PHONY: all clean dependents

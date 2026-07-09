@@ -63,6 +63,8 @@ typedef struct
   int32_t correction_counts;
   int32_t left_target_counts;
   int32_t right_target_counts;
+  float gyro_z;
+  float gyro_damping;
   uint8_t line_lost_stop;
 } CarLineFollow_t;
 
@@ -82,6 +84,7 @@ extern volatile CarControl_t g_car;
 void Car_Init(void);
 void Car_ControlStep(void);
 void Car_Stop(void);
+void Car_StartLineFollow(void);
 void Car_SetSpeedTargets(int32_t left_counts, int32_t right_counts);
 
 #ifdef __cplusplus

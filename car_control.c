@@ -20,21 +20,21 @@ volatile CarControl_t g_car =
   {
     .pid =
     {
-      .kp = 180,
-      .ki = 0.7,
-      .kd = 4,
+      .kp = 90,
+      .ki = 0.32,
+      .kd = 20,
       .integral = 3199,
       .previous_error = 0.0f,
       .output_limit = CAR_PID_OUTPUT_MAX,
       .integral_limit = CAR_PID_INTEGRAL_MAX,
     },
-    .target_counts = 45,
+    .target_counts = 15,
     .measured_counts = 0,
     .encoder_delta = 0,
     .encoder_total = 0,
     .encoder_raw = 0,
     .encoder_last = 0,
-    .manual_pwm = 2600,
+    .manual_pwm = 0,
     .pwm_output = 0,
     .invert_motor = 1,
     .invert_encoder = 0U,
@@ -43,21 +43,21 @@ volatile CarControl_t g_car =
   {
     .pid =
     {
-      .kp = 400,
-      .ki = 0.6,
-      .kd = 40,
+      .kp = 90,
+      .ki = 0.32,
+      .kd = 20,
       .integral = 3199,
       .previous_error = 0.0f,
       .output_limit = CAR_PID_OUTPUT_MAX,
       .integral_limit = CAR_PID_INTEGRAL_MAX,
     },
-    .target_counts = 46,
+    .target_counts =  15,
     .measured_counts = 0,
     .encoder_delta = 0,
     .encoder_total = 0,
     .encoder_raw = 0,
     .encoder_last = 0,
-    .manual_pwm = 2600,
+    .manual_pwm = 0,
     .pwm_output = 0,
     .invert_motor = 1,
     .invert_encoder = 1,
@@ -74,10 +74,12 @@ volatile CarControl_t g_car =
       .output_limit = 30.0f,
       .integral_limit = 1000.0f,
     },
-    .base_counts = 46,
+    .base_counts = 15,
     .correction_counts = 0,
     .left_target_counts = 0,
     .right_target_counts = 0,
+    .gyro_z = 0.0f,
+    .gyro_damping = 0.0f,
     .line_lost_stop = 1U,
   },
 };
@@ -245,6 +247,14 @@ void Car_Stop(void)
                  GPIO_MOTOR_BIN2_PIN);
 }
 
+void Car_StartLineFollow(void)
+{
+  Car_ResetLinePid();
+  Car_ResetPid(&g_car.left);
+  Car_ResetPid(&g_car.right);
+  g_car.mode = CAR_MODE_LINE_FOLLOW;
+}
+
 void Car_SetSpeedTargets(int32_t left_counts, int32_t right_counts)
 {
   g_car.left.target_counts = left_counts;
@@ -338,7 +348,8 @@ static int32_t Car_LinePidStep(int32_t error_counts)
 
   output = (pid->kp * error) +
            (pid->ki * pid->integral) +
-           (pid->kd * derivative);
+           (pid->kd * derivative) -
+           (g_car.line.gyro_damping * g_car.line.gyro_z);
 
   pid->previous_error = error;
   output = Car_LimitFloat(output, pid->output_limit);
