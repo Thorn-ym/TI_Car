@@ -23,6 +23,7 @@
   - `2`：速度 PID
   - `3`：循迹闭环
 - 保留 `g_car` 和 `g_line` 全局调试变量，方便 Ozone / CCS 观察和在线调参
+- 支持 JDY-31-SPP / HC-05 蓝牙串口调试，可用 VOFA+ 实时查看曲线并在线修改 PID 参数
 
 ## 硬件连接
 ![alt text](mspm0g3507_pinout-1.svg)
@@ -61,6 +62,27 @@
 | E2B | PA1 | 右编码器 B 相，GPIO 中断 |
 | GND | GND | 必须共地 |
 
+### 蓝牙串口模块
+
+工程使用 `UART1` 作为蓝牙调试串口，适合 JDY-31-SPP、HC-05 这类透明串口蓝牙模块。
+
+| 蓝牙模块 | MSPM0G3507 引脚 | 说明 |
+|---|---|---|
+| TXD | PA9 | 蓝牙发送，接 MCU 的 `UART1_RX` |
+| RXD | PA8 | 蓝牙接收，接 MCU 的 `UART1_TX` |
+| GND | GND | 必须共地 |
+| VCC | 3.3V | 按模块要求供电 |
+
+串口参数：
+
+- 波特率：`9600`
+- 数据位：`8`
+- 校验位：无
+- 停止位：`1`
+- 硬件流控：无
+
+注意蓝牙模块的 `TXD` 要接 MCU 的 `RX`，蓝牙模块的 `RXD` 要接 MCU 的 `TX`。如果串口助手只能看到自己发送的内容，看不到 MCU 回复，优先检查交叉接线、共地和模块串口波特率。
+
 电机动力线接驱动板白色电机接口：
 
 - `MOTOR-A` 接左电机
@@ -92,6 +114,8 @@ g_car.right.invert_encoder = 1;
 | `car_control.h` | 小车控制结构体、模式枚举和公共接口 |
 | `line_tracker.c` | 七路循迹采样、加权误差、直角弯识别 |
 | `line_tracker.h` | 循迹结构体和公共接口 |
+| `debug_uart.c` | 蓝牙 UART、VOFA+ JustFloat 曲线发送、在线 PID 调参命令 |
+| `debug_uart.h` | 蓝牙调试接口声明 |
 
 ## 初始化流程
 
@@ -230,6 +254,343 @@ Car_ControlStep();
    - `S7` 触发时，`left_target_counts > right_target_counts`
 
 ## 调参建议
+
+### 使用的软件
+
+推荐同时准备两个软件：
+
+| 软件 | 用途 |
+|---|---|
+| VOFA+ | 接收 JustFloat 二进制数据，实时显示速度环和循迹环曲线 |
+| 串口助手 | 发送 ASCII 调参命令，例如 `LP 120`、`MSPD 120 0.05 0 120 0.05 0` |
+
+如果 VOFA+ 正在打开蓝牙 COM 口，串口助手通常不能同时打开同一个 COM 口。可以用下面两种方式：
+
+1. 使用 VOFA+ 的发送区直接发送调参命令。
+2. 先关闭 VOFA+ 串口，用串口助手发送命令，再回到 VOFA+ 看曲线。
+
+当前代码已经做了保护：`VOFA ON` 正在持续发送 JustFloat 数据时，MCU 仍然会解析调参命令，但不会回传 `OK` 或 `ERR` 文本，避免文本混进 JustFloat 数据流导致曲线异常。`VOFA OFF` 后发送命令，MCU 会恢复普通文本确认回复。
+
+### VOFA+ 设置
+
+1. 电脑蓝牙连接 `JDY-31-SPP` 或 `HC-05`，记下对应的 COM 口。
+2. 打开 VOFA+。
+3. 串口选择蓝牙对应的 COM 口。
+4. 波特率选择 `9600`。
+5. DataEngine / 协议选择 `JustFloat`。
+6. 通道数选择 `8`。
+7. 打开串口。
+
+JustFloat 每帧固定发送 `8` 个 `float`，后面跟帧尾 `00 00 80 7F`。这是二进制数据，不是普通文本；串口助手里看到乱码是正常现象。
+
+当前蓝牙串口为 `9600` 波特率，8 通道 JustFloat 数据量较大，主要用于低速调参观察。如果需要更高刷新率，需要同步提高 MCU UART 和蓝牙模块 UART 的波特率，或者减少发送通道数。
+
+### 打开和关闭曲线输出
+
+上电后默认不发送 VOFA 数据，需要手动打开。
+
+常用命令：
+
+```text
+VOFA ON
+VOFA OFF
+TEST ON
+LINE ON
+SPD ON
+PID ON
+SHOW
+```
+
+命令说明：
+
+| 命令 | 作用 |
+|---|---|
+| `VOFA ON` | 开始每 20ms 发送一帧 JustFloat 数据 |
+| `VOFA OFF` | 停止发送 JustFloat 数据 |
+| `TEST ON` | 发送测试波形，用于确认 VOFA+ 显示正常 |
+| `LINE ON` | 切换到循迹环调试数据 |
+| `SPD ON` | 切换到速度环调试数据 |
+| `PID ON` | 等价于 `LINE ON` |
+| `SHOW` | 在 `VOFA OFF` 时回传当前参数 |
+
+建议第一次连接时先测试：
+
+```text
+TEST ON
+VOFA ON
+```
+
+VOFA+ 应该能看到测试曲线。确认通信正常后，再切换到速度环或循迹环：
+
+```text
+SPD ON
+```
+
+或：
+
+```text
+LINE ON
+```
+
+### 速度环曲线含义
+
+发送：
+
+```text
+SPD ON
+VOFA ON
+```
+
+VOFA+ 8 个通道含义：
+
+| 通道 | 含义 |
+|---|---|
+| ch0 | 左轮目标速度 `g_car.left.target_counts` |
+| ch1 | 左轮实测速度 `g_car.left.measured_counts` |
+| ch2 | 右轮目标速度 `g_car.right.target_counts` |
+| ch3 | 右轮实测速度 `g_car.right.measured_counts` |
+| ch4 | 左轮 PWM 输出 `g_car.left.pwm_output` |
+| ch5 | 右轮 PWM 输出 `g_car.right.pwm_output` |
+| ch6 | 左轮速度误差，目标减实测 |
+| ch7 | 右轮速度误差，目标减实测 |
+
+调速度 PID 时重点看：
+
+- 目标速度和实测速度是否方向一致。
+- 实测速度是否能稳定贴近目标速度。
+- PWM 是否长时间打满。
+- 误差是否持续偏大或来回振荡。
+
+### 循迹环曲线含义
+
+发送：
+
+```text
+LINE ON
+VOFA ON
+```
+
+VOFA+ 8 个通道含义：
+
+| 通道 | 含义 |
+|---|---|
+| ch0 | 循迹误差 `g_line.error` |
+| ch1 | 循迹 PID 修正量 `g_car.line.correction_counts` |
+| ch2 | 循迹计算出的左轮目标速度 |
+| ch3 | 循迹计算出的右轮目标速度 |
+| ch4 | 左轮 PWM 输出 |
+| ch5 | 右轮 PWM 输出 |
+| ch6 | 当前循迹 `Kp` |
+| ch7 | 当前循迹 `Kd` |
+
+调循迹 PID 时重点看：
+
+- `ch0` 偏差变化是否过大。
+- `ch1` 修正量是否频繁大幅正负跳变。
+- 左右目标速度是否随偏差合理分配。
+- 车身抖动时，通常先降低循迹 `Kp` 或 `Kd`，再观察曲线变化。
+
+### 发送调参命令的方法
+
+调参命令是普通 ASCII 文本，每条命令后面要带回车或换行。大小写不敏感，下面都用大写表示。
+
+例如要把左轮速度环 `Kp` 改成 `130`，发送：
+
+```text
+LP 130
+```
+
+要把循迹基础速度改成 `15`，发送：
+
+```text
+BASE 15
+```
+
+如果当前是 `VOFA OFF`，MCU 会回复：
+
+```text
+OK LP=130.000
+OK BASE=15
+```
+
+如果当前是 `VOFA ON`，命令仍然生效，但 MCU 不回复文本，这是为了防止 `OK` 文本混进 JustFloat 数据流。调参时可以一边看 VOFA+ 曲线，一边直接发送 `LP 130`、`MSPD ...` 这类命令。
+
+### 速度 PID 在线调参命令
+
+单独设置左轮速度 PID：
+
+```text
+LP 120
+LI 0.05
+LD 0
+```
+
+单独设置右轮速度 PID：
+
+```text
+RP 120
+RI 0.05
+RD 0
+```
+
+一次设置左轮速度 PID，并清左轮积分：
+
+```text
+LSPD 120 0.05 0
+```
+
+一次设置右轮速度 PID，并清右轮积分：
+
+```text
+RSPD 120 0.05 0
+```
+
+一次设置左右轮速度 PID，并清左右轮积分：
+
+```text
+MSPD 120 0.05 0 125 0.05 0
+```
+
+清速度环积分：
+
+```text
+LSTOP
+RSTOP
+MSTOP
+```
+
+命令说明：
+
+| 命令 | 修改内容 |
+|---|---|
+| `LP x` | 设置 `g_car.left.pid.kp` |
+| `LI x` | 设置 `g_car.left.pid.ki` |
+| `LD x` | 设置 `g_car.left.pid.kd` |
+| `RP x` | 设置 `g_car.right.pid.kp` |
+| `RI x` | 设置 `g_car.right.pid.ki` |
+| `RD x` | 设置 `g_car.right.pid.kd` |
+| `LSPD kp ki kd` | 一次设置左轮 `Kp Ki Kd`，并清左轮积分 |
+| `RSPD kp ki kd` | 一次设置右轮 `Kp Ki Kd`，并清右轮积分 |
+| `MSPD lkp lki lkd rkp rki rkd` | 一次设置左右轮速度 PID，并清左右轮积分 |
+| `LSTOP` | 左轮速度 PID 积分和上次误差清零 |
+| `RSTOP` | 右轮速度 PID 积分和上次误差清零 |
+| `MSTOP` | 左右轮速度 PID 积分和上次误差都清零 |
+
+设置左右轮目标速度并进入速度 PID 模式：
+
+```text
+SPDSET 15 15
+```
+
+`SPDSET left right` 会设置：
+
+```c
+g_car.left.target_counts = left;
+g_car.right.target_counts = right;
+g_car.mode = CAR_MODE_SPEED_PID;
+```
+
+并清左右轮速度 PID 积分。
+
+速度环推荐调试流程：
+
+```text
+VOFA OFF
+SPD ON
+MSTOP
+MSPD 100 0 0 100 0 0
+SPDSET 15 15
+VOFA ON
+```
+
+然后观察 VOFA+：
+
+1. 如果实测速度明显跟不上目标速度，逐步增大 `LP/RP`。
+2. 如果速度曲线明显来回振荡，减小 `LP/RP` 或增加少量 `LD/RD`。
+3. 如果长期有静差，再少量增加 `LI/RI`。
+4. 每次大幅修改 `Ki` 后建议发送 `MSTOP` 清积分。
+
+### 循迹 PID 在线调参命令
+
+单独设置循迹 PID：
+
+```text
+P 1.2
+I 0
+D 0.4
+```
+
+一次设置循迹 PID，并清循迹积分：
+
+```text
+LINEPID 1.2 0 0.4
+```
+
+设置循迹基础速度：
+
+```text
+BASE 15
+```
+
+命令说明：
+
+| 命令 | 修改内容 |
+|---|---|
+| `P x` | 设置 `g_car.line.pid.kp` |
+| `I x` | 设置 `g_car.line.pid.ki` |
+| `D x` | 设置 `g_car.line.pid.kd` |
+| `G x` | 设置 `g_car.line.gyro_damping`，没有陀螺仪时通常保持 `0` |
+| `BASE x` | 设置 `g_car.line.base_counts` |
+| `LINEPID kp ki kd` | 一次设置循迹 `Kp Ki Kd`，并清循迹积分 |
+| `STOP` | 停车，进入禁用模式 |
+| `START` | 恢复循迹闭环 |
+
+循迹环推荐调试流程：
+
+```text
+VOFA OFF
+LINE ON
+BASE 12
+LINEPID 1.0 0 0.2
+START
+VOFA ON
+```
+
+然后边看曲线边微调：
+
+```text
+P 1.2
+D 0.3
+BASE 15
+```
+
+一般现象和处理：
+
+| 现象 | 调整方向 |
+|---|---|
+| 车反应慢，压线后回正不够 | 适当增大 `P` |
+| 车左右快速抖动 | 先减小 `P`，再减小或重新寻找 `D` |
+| 入弯时修正不够 | 适当增大 `P` 或降低 `BASE` |
+| 直道轻微摆动 | 降低 `P` 或增加少量 `D` |
+| 长时间偏一边 | 确认电机速度环和机械安装，再少量尝试 `I` |
+
+### 查看当前参数
+
+在 `VOFA OFF` 时发送：
+
+```text
+SHOW
+```
+
+返回示例：
+
+```text
+LINE P=1.300 I=0.080 D=0.200 G=0.000 BASE=46 MODE=3
+LEFT P=180.000 I=0.350 D=26.000
+RIGHT P=180.000 I=0.280 D=18.000
+```
+
+`VOFA ON` 时发送 `SHOW` 不会回复文本，避免影响曲线。
 
 常用调参入口：
 
