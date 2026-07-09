@@ -1,7 +1,7 @@
 ******************************************************************************
             TI ARM Clang Linker PC v4.0.4                      
 ******************************************************************************
->> Linked Thu Jul  9 18:21:27 2026
+>> Linked Thu Jul  9 20:11:38 2026
 
 OUTPUT FILE NAME:   <TI_Car_no_buletooth.out>
 ENTRY POINT SYMBOL: "_c_int00_noargs"  address: 00003ed1

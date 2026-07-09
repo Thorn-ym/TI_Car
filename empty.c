@@ -27,8 +27,8 @@ int main(void)
     g_car.right.invert_motor = 1U;
     g_car.right.invert_encoder = 1U;
 
-    g_car.left.target_counts = 15;
-    g_car.right.target_counts = 15;
+    g_car.left.target_counts = 20;
+    g_car.right.target_counts = 20;
     g_car.mode = 3;
 
     while (1) {

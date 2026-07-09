@@ -174,22 +174,22 @@ extern "C" {
 #define GPIO_LINE_S3_PORT                                                (GPIOA)
 #define GPIO_LINE_S3_PIN                                        (DL_GPIO_PIN_17)
 #define GPIO_LINE_S3_IOMUX                                       (IOMUX_PINCM39)
-/* Defines for S4: GPIOA.18 with pinCMx 40 on package pin 11 */
-#define GPIO_LINE_S4_PORT                                                (GPIOA)
+/* Defines for S4: GPIOB.18 with pinCMx 44 on package pin 15 */
+#define GPIO_LINE_S4_PORT                                                (GPIOB)
 #define GPIO_LINE_S4_PIN                                        (DL_GPIO_PIN_18)
-#define GPIO_LINE_S4_IOMUX                                       (IOMUX_PINCM40)
-/* Defines for S5: GPIOB.18 with pinCMx 44 on package pin 15 */
+#define GPIO_LINE_S4_IOMUX                                       (IOMUX_PINCM44)
+/* Defines for S5: GPIOB.19 with pinCMx 45 on package pin 16 */
 #define GPIO_LINE_S5_PORT                                                (GPIOB)
-#define GPIO_LINE_S5_PIN                                        (DL_GPIO_PIN_18)
-#define GPIO_LINE_S5_IOMUX                                       (IOMUX_PINCM44)
-/* Defines for S6: GPIOB.19 with pinCMx 45 on package pin 16 */
+#define GPIO_LINE_S5_PIN                                        (DL_GPIO_PIN_19)
+#define GPIO_LINE_S5_IOMUX                                       (IOMUX_PINCM45)
+/* Defines for S6: GPIOB.20 with pinCMx 48 on package pin 19 */
 #define GPIO_LINE_S6_PORT                                                (GPIOB)
-#define GPIO_LINE_S6_PIN                                        (DL_GPIO_PIN_19)
-#define GPIO_LINE_S6_IOMUX                                       (IOMUX_PINCM45)
-/* Defines for S7: GPIOB.20 with pinCMx 48 on package pin 19 */
+#define GPIO_LINE_S6_PIN                                        (DL_GPIO_PIN_20)
+#define GPIO_LINE_S6_IOMUX                                       (IOMUX_PINCM48)
+/* Defines for S7: GPIOB.24 with pinCMx 52 on package pin 23 */
 #define GPIO_LINE_S7_PORT                                                (GPIOB)
-#define GPIO_LINE_S7_PIN                                        (DL_GPIO_PIN_20)
-#define GPIO_LINE_S7_IOMUX                                       (IOMUX_PINCM48)
+#define GPIO_LINE_S7_PIN                                        (DL_GPIO_PIN_24)
+#define GPIO_LINE_S7_IOMUX                                       (IOMUX_PINCM52)
 /* Port definition for Pin Group GPIO_ENCODER */
 #define GPIO_ENCODER_PORT                                                (GPIOA)
 
