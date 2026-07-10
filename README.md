@@ -271,6 +271,102 @@ Car_ControlStep();
 
 当前代码已经做了保护：`VOFA ON` 正在持续发送 JustFloat 数据时，MCU 仍然会解析调参命令，但不会回传 `OK` 或 `ERR` 文本，避免文本混进 JustFloat 数据流导致曲线异常。`VOFA OFF` 后发送命令，MCU 会恢复普通文本确认回复。
 
+### 蓝牙调试模式开关
+
+蓝牙调 PID 和 VOFA+ 曲线由编译期开关 `CAR_DEBUG_MODE` 控制。这个开关在 [debug_uart.h](debug_uart.h) 里，当前需要修改的位置是第 24 行附近：
+
+```c
+#define CAR_DEBUG_MODE   DEBUG_MODE_OFF
+```
+
+如果要切换模式，只改这一行，然后重新编译、下载程序。
+
+三种可选模式定义在同一个文件中：
+
+```c
+#define DEBUG_MODE_OFF   0U
+#define DEBUG_MODE_CMD   1U
+#define DEBUG_MODE_VOFA  2U
+```
+
+#### 比赛模式：关闭全部蓝牙调试
+
+比赛前建议改成：
+
+```c
+#define CAR_DEBUG_MODE   DEBUG_MODE_OFF
+```
+
+这个模式下：
+
+- 不解析蓝牙命令。
+- 不发送 `OK`、`ERR`、`SHOW` 等文本。
+- 不发送 VOFA+ JustFloat 曲线。
+- `Debug_UART_Task()` 基本直接返回，避免串口发送、命令解析和阻塞风险。
+- 蓝牙串口发送任何命令都没有反应，这是正常现象。
+- 小车循迹、速度 PID、电机控制仍按主程序正常运行。
+
+#### 命令调参模式：只用蓝牙改参数
+
+如果只想用串口助手或 VOFA+ 发送区修改 PID，不需要实时曲线，改成：
+
+```c
+#define CAR_DEBUG_MODE   DEBUG_MODE_CMD
+```
+
+这个模式下：
+
+- 可以发送 `LP`、`LI`、`LD`、`RP`、`RI`、`RD` 修改速度 PID。
+- 可以发送 `P`、`I`、`D`、`BASE`、`LINEPID` 修改循迹 PID 和基础速度。
+- 可以发送 `SHOW` 查看当前参数。
+- 可以发送 `START`、`STOP`、`SPDSET` 等控制命令。
+- MCU 会回复少量文本，例如 `OK LP=120.000`、`ERR LP`、`SHOW` 参数内容。
+- 不会发送 VOFA+ JustFloat 曲线；即使发送 `VOFA ON`，也不会开始曲线输出。
+
+适合调完参数后做低风险验证，因为没有持续二进制曲线数据占用串口。
+
+#### 完整调试模式：蓝牙调参 + VOFA+ 曲线
+
+如果要一边看 VOFA+ 曲线一边在线修改 PID，改成：
+
+```c
+#define CAR_DEBUG_MODE   DEBUG_MODE_VOFA
+```
+
+这个模式下：
+
+- 可以接收所有蓝牙调参命令。
+- 可以发送 VOFA+ JustFloat 曲线。
+- 可以用 `TEST ON`、`SPD ON`、`LINE ON`、`PID ON` 切换曲线内容。
+- `VOFA OFF` 时发送命令会有 `OK/ERR/SHOW` 文本回复。
+- `VOFA ON` 时发送 `LP`、`RP`、`BASE`、`MSPD` 等命令仍会生效，但不会回复文本，避免文本混进 JustFloat 数据流导致曲线错位。
+
+完整调试模式的典型流程：
+
+```text
+SPD ON
+VOFA ON
+LP 120
+RP 120
+MSPD 120 0.05 0 120 0.05 0
+BASE 15
+```
+
+如果需要查看参数文本，先停止曲线：
+
+```text
+VOFA OFF
+SHOW
+```
+
+模式切换总结：
+
+| 目标 | 修改第 24 行为 |
+|---|---|
+| 比赛运行，彻底关闭蓝牙调试 | `#define CAR_DEBUG_MODE   DEBUG_MODE_OFF` |
+| 只用蓝牙命令调 PID，不看曲线 | `#define CAR_DEBUG_MODE   DEBUG_MODE_CMD` |
+| 蓝牙命令调 PID，同时用 VOFA+ 看曲线 | `#define CAR_DEBUG_MODE   DEBUG_MODE_VOFA` |
+
 ### VOFA+ 设置
 
 1. 电脑蓝牙连接 `JDY-31-SPP` 或 `HC-05`，记下对应的 COM 口。
@@ -283,7 +379,7 @@ Car_ControlStep();
 
 JustFloat 每帧固定发送 `8` 个 `float`，后面跟帧尾 `00 00 80 7F`。这是二进制数据，不是普通文本；串口助手里看到乱码是正常现象。
 
-当前蓝牙串口为 `9600` 波特率，8 通道 JustFloat 数据量较大，主要用于低速调参观察。如果需要更高刷新率，需要同步提高 MCU UART 和蓝牙模块 UART 的波特率，或者减少发送通道数。
+当前蓝牙串口为 `9600` 波特率，8 通道 JustFloat 数据量较大，VOFA+ 曲线发送周期设置为约 `50ms` 一帧，主要用于低速调参观察。如果需要更高刷新率，需要同步提高 MCU UART 和蓝牙模块 UART 的波特率，或者减少发送通道数。
 
 ### 打开和关闭曲线输出
 
@@ -305,7 +401,7 @@ SHOW
 
 | 命令 | 作用 |
 |---|---|
-| `VOFA ON` | 开始每 20ms 发送一帧 JustFloat 数据 |
+| `VOFA ON` | 在 `DEBUG_MODE_VOFA` 下开始每 50ms 发送一帧 JustFloat 数据 |
 | `VOFA OFF` | 停止发送 JustFloat 数据 |
 | `TEST ON` | 发送测试波形，用于确认 VOFA+ 显示正常 |
 | `LINE ON` | 切换到循迹环调试数据 |
