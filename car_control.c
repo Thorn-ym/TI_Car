@@ -20,15 +20,15 @@ volatile CarControl_t g_car =
   {
     .pid =
     {
-      .kp = 90,
-      .ki = 0.32,
-      .kd = 20,
+      .kp = 180,
+      .ki = 0.35,
+      .kd = 26,
       .integral = 3199,
       .previous_error = 0.0f,
       .output_limit = CAR_PID_OUTPUT_MAX,
       .integral_limit = CAR_PID_INTEGRAL_MAX,
     },
-    .target_counts = 20,
+    .target_counts = 26,
     .measured_counts = 0,
     .encoder_delta = 0,
     .encoder_total = 0,
@@ -43,15 +43,15 @@ volatile CarControl_t g_car =
   {
     .pid =
     {
-      .kp = 90,
-      .ki = 0.32,
-      .kd = 20,
+      .kp = 180,
+      .ki = 0.28,
+      .kd = 18,
       .integral = 3199,
       .previous_error = 0.0f,
       .output_limit = CAR_PID_OUTPUT_MAX,
       .integral_limit = CAR_PID_INTEGRAL_MAX,
     },
-    .target_counts =  20,
+    .target_counts =  26,
     .measured_counts = 0,
     .encoder_delta = 0,
     .encoder_total = 0,
@@ -66,15 +66,15 @@ volatile CarControl_t g_car =
   {
     .pid =
     {
-      .kp = 1.3f,
-      .ki = 0.08f,
+      .kp = 0.9f,
+      .ki = 0.05f,
       .kd = 0.2f,
       .integral = 0.0f,
       .previous_error = 0.0f,
       .output_limit = 30.0f,
       .integral_limit = 1000.0f,
     },
-    .base_counts = 20,
+    .base_counts = 26,
     .correction_counts = 0,
     .left_target_counts = 0,
     .right_target_counts = 0,

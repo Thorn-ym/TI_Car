@@ -15,20 +15,20 @@ int main(void)
     Car_Init();
     Debug_UART_Init();
 
-    g_car.left.pid.kp = 90;
-    g_car.left.pid.ki = 0.32f;
-    g_car.left.pid.kd = 20;
-    g_car.right.pid.kp = 90;
-    g_car.right.pid.ki = 0.32f;
-    g_car.right.pid.kd = 20;
+    g_car.left.pid.kp = 180;
+    g_car.left.pid.ki = 0.35f;
+    g_car.left.pid.kd = 26;
+    g_car.right.pid.kp = 180;
+    g_car.right.pid.ki = 0.28f;
+    g_car.right.pid.kd = 18;
 
     g_car.left.invert_motor = 1U;
     g_car.left.invert_encoder = 0U;
     g_car.right.invert_motor = 1U;
     g_car.right.invert_encoder = 1U;
 
-    g_car.left.target_counts = 20;
-    g_car.right.target_counts = 20;
+    g_car.left.target_counts = 26;
+    g_car.right.target_counts = 26;
     g_car.mode = 3;
 
     while (1) {
