@@ -16,6 +16,20 @@ extern "C" {
 
 #include <stdint.h>
 
+#define DEBUG_MODE_OFF   0U
+#define DEBUG_MODE_CMD   1U
+#define DEBUG_MODE_VOFA  2U
+
+#ifndef CAR_DEBUG_MODE
+#define CAR_DEBUG_MODE   DEBUG_MODE_OFF
+#endif
+
+#if ((CAR_DEBUG_MODE != DEBUG_MODE_OFF) && \
+     (CAR_DEBUG_MODE != DEBUG_MODE_CMD) && \
+     (CAR_DEBUG_MODE != DEBUG_MODE_VOFA))
+#error "CAR_DEBUG_MODE must be DEBUG_MODE_OFF, DEBUG_MODE_CMD, or DEBUG_MODE_VOFA"
+#endif
+
 void Debug_UART_Init(void);
 void Debug_UART_Task(void);
 void Debug_UART_ProcessRx(void);

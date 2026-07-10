@@ -17,14 +17,15 @@
 
 #define DEBUG_UART_RX_BUFFER_SIZE    128U
 #define DEBUG_UART_LINE_BUFFER_SIZE  64U
-#define DEBUG_UART_VOFA_PERIOD_TICKS 2U
+#define DEBUG_UART_VOFA_PERIOD_TICKS 5U
 #define DEBUG_UART_VOFA_MODE_TEST    0U
 #define DEBUG_UART_VOFA_MODE_LINE    1U
 #define DEBUG_UART_VOFA_MODE_SPEED   2U
 
 #define DEBUG_UART_SEND_LITERAL(text) \
-  Debug_UART_SendTextIfIdle((text), (uint16_t)(sizeof(text) - 1U))
+  Debug_UART_SendTextIfAllowed((text), (uint16_t)(sizeof(text) - 1U))
 
+#if (CAR_DEBUG_MODE != DEBUG_MODE_OFF)
 static volatile uint8_t s_rx_buffer[DEBUG_UART_RX_BUFFER_SIZE];
 static volatile uint16_t s_rx_head = 0U;
 static volatile uint16_t s_rx_tail = 0U;
@@ -40,7 +41,7 @@ static uint16_t Debug_UART_NextIndex(uint16_t index, uint16_t size);
 static uint32_t Debug_UART_EnterCritical(void);
 static void Debug_UART_ExitCritical(uint32_t primask);
 static void Debug_UART_SendTextBuffer(const char *text, uint16_t length);
-static void Debug_UART_SendTextIfIdle(const char *text, uint16_t length);
+static void Debug_UART_SendTextIfAllowed(const char *text, uint16_t length);
 static void Debug_UART_RxPushFromIsr(uint8_t byte);
 static uint8_t Debug_UART_RxPop(uint8_t *byte);
 static uint8_t Debug_UART_IsSpace(char ch);
@@ -71,9 +72,13 @@ static void Debug_UART_ResetMotorPid(volatile CarMotor_t *motor);
 static void Debug_UART_ResetLinePid(void);
 static void Debug_UART_SendStatus(void);
 static void Debug_UART_ParseCommand(const char *line);
+#endif
 
 void Debug_UART_Init(void)
 {
+#if (CAR_DEBUG_MODE == DEBUG_MODE_OFF)
+  return;
+#else
   s_rx_head = 0U;
   s_rx_tail = 0U;
   s_line_length = 0U;
@@ -96,13 +101,20 @@ void Debug_UART_Init(void)
                                     DL_UART_MAIN_INTERRUPT_TX);
   NVIC_ClearPendingIRQ(UART_DEBUG_INST_INT_IRQN);
   NVIC_EnableIRQ(UART_DEBUG_INST_INT_IRQN);
+#endif
 }
 
 void Debug_UART_Task(void)
 {
-  uint32_t tick = 0U;
-
+#if (CAR_DEBUG_MODE == DEBUG_MODE_OFF)
+  return;
+#else
   Debug_UART_ProcessRx();
+
+#if (CAR_DEBUG_MODE != DEBUG_MODE_VOFA)
+  return;
+#else
+  uint32_t tick = 0U;
 
   if (s_vofa_stream_enabled == 0U)
   {
@@ -129,10 +141,15 @@ void Debug_UART_Task(void)
         break;
     }
   }
+#endif
+#endif
 }
 
 void Debug_UART_ProcessRx(void)
 {
+#if (CAR_DEBUG_MODE == DEBUG_MODE_OFF)
+  return;
+#else
   uint8_t byte = 0U;
 
   while (Debug_UART_RxPop(&byte) != 0U)
@@ -166,15 +183,19 @@ void Debug_UART_ProcessRx(void)
       }
     }
   }
+#endif
 }
 
 void Debug_UART_SendVofa(void)
 {
+#if (CAR_DEBUG_MODE == DEBUG_MODE_VOFA)
   vofa_pid_send();
+#endif
 }
 
 void vofa_test_send(void)
 {
+#if (CAR_DEBUG_MODE == DEBUG_MODE_VOFA)
   static float x = 0.0f;
   float data[8];
   static const uint8_t tail[4] = {0x00U, 0x00U, 0x80U, 0x7FU};
@@ -196,15 +217,19 @@ void vofa_test_send(void)
 
   debug_uart_send_bytes((const uint8_t *)data, (uint32_t)sizeof(data));
   debug_uart_send_bytes(tail, (uint32_t)sizeof(tail));
+#endif
 }
 
 void vofa_pid_send(void)
 {
+#if (CAR_DEBUG_MODE == DEBUG_MODE_VOFA)
   vofa_line_send();
+#endif
 }
 
 void vofa_line_send(void)
 {
+#if (CAR_DEBUG_MODE == DEBUG_MODE_VOFA)
   float data[8];
   static const uint8_t tail[4] = {0x00U, 0x00U, 0x80U, 0x7FU};
 
@@ -219,10 +244,12 @@ void vofa_line_send(void)
 
   debug_uart_send_bytes((const uint8_t *)data, (uint32_t)sizeof(data));
   debug_uart_send_bytes(tail, (uint32_t)sizeof(tail));
+#endif
 }
 
 void vofa_speed_send(void)
 {
+#if (CAR_DEBUG_MODE == DEBUG_MODE_VOFA)
   float data[8];
   static const uint8_t tail[4] = {0x00U, 0x00U, 0x80U, 0x7FU};
 
@@ -237,15 +264,14 @@ void vofa_speed_send(void)
 
   debug_uart_send_bytes((const uint8_t *)data, (uint32_t)sizeof(data));
   debug_uart_send_bytes(tail, (uint32_t)sizeof(tail));
-}
-
-void Debug_UART_SetGyroZ(float gyro_z)
-{
-  g_car.line.gyro_z = gyro_z;
+#endif
 }
 
 void UART_DEBUG_INST_IRQHandler(void)
 {
+#if (CAR_DEBUG_MODE == DEBUG_MODE_OFF)
+  (void)DL_UART_Main_getPendingInterrupt(UART_DEBUG_INST);
+#else
   DL_UART_IIDX interrupt_index;
 
   do
@@ -274,8 +300,10 @@ void UART_DEBUG_INST_IRQHandler(void)
         break;
     }
   } while (interrupt_index != DL_UART_MAIN_IIDX_NO_INTERRUPT);
+#endif
 }
 
+#if (CAR_DEBUG_MODE != DEBUG_MODE_OFF)
 static uint16_t Debug_UART_NextIndex(uint16_t index, uint16_t size)
 {
   index++;
@@ -308,21 +336,34 @@ static void Debug_UART_SendTextBuffer(const char *text, uint16_t length)
   debug_uart_send_bytes((const uint8_t *)text, (uint32_t)length);
 }
 
-static void Debug_UART_SendTextIfIdle(const char *text, uint16_t length)
+static void Debug_UART_SendTextIfAllowed(const char *text, uint16_t length)
 {
+#if (CAR_DEBUG_MODE == DEBUG_MODE_CMD)
+  Debug_UART_SendTextBuffer(text, length);
+#else
   if (s_vofa_stream_enabled == 0U)
   {
     Debug_UART_SendTextBuffer(text, length);
   }
+#endif
 }
+#endif
 
 void debug_uart_send_byte(uint8_t byte)
 {
+#if (CAR_DEBUG_MODE == DEBUG_MODE_OFF)
+  (void)byte;
+#else
   DL_UART_Main_transmitDataBlocking(UART_DEBUG_INST, byte);
+#endif
 }
 
 void debug_uart_send_bytes(const uint8_t *buf, uint32_t len)
 {
+#if (CAR_DEBUG_MODE == DEBUG_MODE_OFF)
+  (void)buf;
+  (void)len;
+#else
   uint32_t index = 0U;
 
   if (buf == NULL)
@@ -334,8 +375,10 @@ void debug_uart_send_bytes(const uint8_t *buf, uint32_t len)
   {
     debug_uart_send_byte(buf[index]);
   }
+#endif
 }
 
+#if (CAR_DEBUG_MODE != DEBUG_MODE_OFF)
 static void Debug_UART_RxPushFromIsr(uint8_t byte)
 {
   uint16_t next = Debug_UART_NextIndex(s_rx_head, DEBUG_UART_RX_BUFFER_SIZE);
@@ -660,7 +703,7 @@ static void Debug_UART_SendOkFloat(const char *name, float value)
   pos = Debug_UART_AppendString(buffer, pos, "\r\n");
   buffer[pos] = '\0';
 
-  Debug_UART_SendTextIfIdle(buffer, pos);
+  Debug_UART_SendTextIfAllowed(buffer, pos);
 }
 
 static void Debug_UART_SendOkInt(const char *name, int32_t value)
@@ -675,7 +718,7 @@ static void Debug_UART_SendOkInt(const char *name, int32_t value)
   pos = Debug_UART_AppendString(buffer, pos, "\r\n");
   buffer[pos] = '\0';
 
-  Debug_UART_SendTextIfIdle(buffer, pos);
+  Debug_UART_SendTextIfAllowed(buffer, pos);
 }
 
 static void Debug_UART_ResetMotorPid(volatile CarMotor_t *motor)
@@ -695,7 +738,8 @@ static void Debug_UART_SendStatus(void)
   char buffer[DEBUG_UART_LINE_BUFFER_SIZE];
   uint16_t pos = 0U;
 
-  if (s_vofa_stream_enabled != 0U)
+  if ((CAR_DEBUG_MODE == DEBUG_MODE_OFF) ||
+      ((CAR_DEBUG_MODE == DEBUG_MODE_VOFA) && (s_vofa_stream_enabled != 0U)))
   {
     return;
   }
@@ -715,7 +759,7 @@ static void Debug_UART_SendStatus(void)
   pos = Debug_UART_AppendString(buffer, pos, "\r\n");
   buffer[pos] = '\0';
 
-  Debug_UART_SendTextIfIdle(buffer, pos);
+  Debug_UART_SendTextIfAllowed(buffer, pos);
 
   pos = 0U;
   pos = Debug_UART_AppendString(buffer, pos, "LEFT P=");
@@ -727,7 +771,7 @@ static void Debug_UART_SendStatus(void)
   pos = Debug_UART_AppendString(buffer, pos, "\r\n");
   buffer[pos] = '\0';
 
-  Debug_UART_SendTextIfIdle(buffer, pos);
+  Debug_UART_SendTextIfAllowed(buffer, pos);
 
   pos = 0U;
   pos = Debug_UART_AppendString(buffer, pos, "RIGHT P=");
@@ -739,7 +783,7 @@ static void Debug_UART_SendStatus(void)
   pos = Debug_UART_AppendString(buffer, pos, "\r\n");
   buffer[pos] = '\0';
 
-  Debug_UART_SendTextIfIdle(buffer, pos);
+  Debug_UART_SendTextIfAllowed(buffer, pos);
 }
 
 static void Debug_UART_ParseCommand(const char *line)
@@ -998,9 +1042,14 @@ static void Debug_UART_ParseCommand(const char *line)
   }
   else if (Debug_UART_CommandEquals(line, "VOFA ON") != 0U)
   {
+#if (CAR_DEBUG_MODE == DEBUG_MODE_VOFA)
     DEBUG_UART_SEND_LITERAL("OK VOFA ON\r\n");
     s_last_vofa_tick = g_car.control_tick - DEBUG_UART_VOFA_PERIOD_TICKS;
     s_vofa_stream_enabled = 1U;
+#else
+    s_vofa_stream_enabled = 0U;
+    DEBUG_UART_SEND_LITERAL("OK VOFA DISABLED\r\n");
+#endif
   }
   else if (Debug_UART_CommandEquals(line, "VOFA OFF") != 0U)
   {
@@ -1031,4 +1080,10 @@ static void Debug_UART_ParseCommand(const char *line)
   {
     DEBUG_UART_SEND_LITERAL("ERR unknown\r\n");
   }
+}
+#endif
+
+void Debug_UART_SetGyroZ(float gyro_z)
+{
+  g_car.line.gyro_z = gyro_z;
 }
