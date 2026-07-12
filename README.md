@@ -24,6 +24,7 @@
   - `3`：循迹闭环
 - 保留 `g_car` 和 `g_line` 全局调试变量，方便 Ozone / CCS 观察和在线调参
 - 支持 JDY-31-SPP / HC-05 蓝牙串口调试，可用 VOFA+ 实时查看曲线并在线修改 PID 参数
+- 支持 MPU6050 陀螺仪 Z 轴角速度读取，可作为循迹横摆阻尼补偿输入
 
 ## 硬件连接
 ![alt text](mspm0g3507_pinout-1.svg)
@@ -83,6 +84,25 @@
 
 注意蓝牙模块的 `TXD` 要接 MCU 的 `RX`，蓝牙模块的 `RXD` 要接 MCU 的 `TX`。如果串口助手只能看到自己发送的内容，看不到 MCU 回复，优先检查交叉接线、共地和模块串口波特率。
 
+### MPU6050 陀螺仪模块
+
+工程使用 `I2C1` 读取 MPU6050，主要使用 Z 轴角速度给循迹 PID 增加车身横摆阻尼。
+
+| MPU6050 模块 | MSPM0G3507 引脚 | 说明 |
+|---|---|---|
+| SCL | PB2 | `I2C1_SCL` |
+| SDA | PB3 | `I2C1_SDA` |
+| GND | GND | 必须共地 |
+| VCC | 3.3V | 按模块要求供电 |
+
+I2C 总线速度配置为 `400kHz`。代码会优先检测地址 `0x68`，失败后自动尝试 `0x69`。
+
+MPU6050 建议固定在车体中心附近，尽量保持 Z 轴垂直于小车底盘平面。若后续发现陀螺仪补偿方向相反，不需要改接线，可以把蓝牙命令 `G x` 的数值改成负数。
+
+MPU6050 初始化时会自动做一次 Z 轴陀螺仪零偏校准。上电后 `MPU6050_Init()` 会检测模块、配置寄存器，然后调用 `MPU6050_Calibrate()` 连续读取 64 次 Z 轴角速度，把静止状态下的平均值保存到 `g_mpu6050.gyro_z_bias_dps`。后续运行时，代码会用当前读数减去这个零偏，再经过低通滤波后写入 `g_car.line.gyro_z`。因此上电和校准时小车要放平并保持静止。
+
+蓝牙命令 `MPU CAL` 是手动重新校准入口，不是每次必须发送。如果上电时碰到了车、MPU6050 刚上电有漂移、或者静止时 `g_car.line.gyro_z` 明显不接近 0，就把小车放平静止后发送 `MPU CAL`，重新计算一次零偏。
+
 电机动力线接驱动板白色电机接口：
 
 - `MOTOR-A` 接左电机
@@ -114,6 +134,8 @@ g_car.right.invert_encoder = 1;
 | `car_control.h` | 小车控制结构体、模式枚举和公共接口 |
 | `line_tracker.c` | 七路循迹采样、加权误差、直角弯识别 |
 | `line_tracker.h` | 循迹结构体和公共接口 |
+| `mpu6050.c` | MPU6050 初始化、零偏校准、Z 轴角速度读取和滤波 |
+| `mpu6050.h` | MPU6050 状态结构体和公共接口 |
 | `debug_uart.c` | 蓝牙 UART、VOFA+ JustFloat 曲线发送、在线 PID 调参命令 |
 | `debug_uart.h` | 蓝牙调试接口声明 |
 
@@ -125,7 +147,17 @@ g_car.right.invert_encoder = 1;
 SYSCFG_DL_init();
 LineTracker_Init();
 Car_Init();
+MPU6050_Init();
 ```
+
+主循环会调用：
+
+```c
+MPU6050_Task();
+Debug_UART_Task();
+```
+
+`MPU6050_Task()` 按 `g_car.control_tick` 约 10ms 读取一次陀螺仪，不在定时器中断里执行 I2C 读写，避免阻塞控制中断。
 
 随后写入默认运行参数：
 
@@ -202,6 +234,35 @@ Car_ControlStep();
 | S5 | `0x10` | `-16` |
 | S6 | `0x20` | `-33` |
 | S7 | `0x40` | `-50` |
+
+### `g_mpu6050`
+
+`g_mpu6050` 是 MPU6050 状态变量，可用于观察 I2C 通信、零偏校准和陀螺仪输出。
+
+常用字段：
+
+| 字段 | 说明 |
+|---|---|
+| `g_mpu6050.address` | 当前检测到的 I2C 地址，通常为 `0x68` 或 `0x69` |
+| `g_mpu6050.present` | 是否检测到 MPU6050 |
+| `g_mpu6050.valid` | 当前陀螺仪数据是否有效 |
+| `g_mpu6050.gyro_z_raw` | Z 轴角速度原始值 |
+| `g_mpu6050.gyro_z_dps` | 去零偏后的 Z 轴角速度，单位 deg/s |
+| `g_mpu6050.gyro_z_filtered_dps` | 低通滤波后的 Z 轴角速度 |
+| `g_mpu6050.gyro_z_bias_dps` | 上电或 `MPU CAL` 得到的 Z 轴零偏 |
+| `g_mpu6050.error_count` | I2C 读写失败次数 |
+
+滤波后的 Z 轴角速度会写入 `g_car.line.gyro_z`。循迹 PID 中的陀螺仪补偿项为：
+
+```c
+g_car.line.gyro_damping * g_car.line.gyro_z
+```
+
+默认 `g_car.line.gyro_damping = 0.0f`，所以 MPU6050 默认只读取和显示数据，不改变原来的循迹控制效果。
+
+这里的 `gyro_z` 完整变量名是 `g_car.line.gyro_z`，它来自 `g_mpu6050.gyro_z_filtered_dps`。调试时如果说观察 `gyro_z`，就是观察 `g_car.line.gyro_z`，也可以同时观察 `g_mpu6050.gyro_z_filtered_dps`、`g_mpu6050.gyro_z_raw` 和 `g_mpu6050.gyro_z_bias_dps`。
+
+蓝牙命令 `G x` 设置的不是陀螺仪读数，而是陀螺仪补偿强度 `g_car.line.gyro_damping`。例如发送 `G 0.02` 后，代码中等价于 `g_car.line.gyro_damping = 0.02f`；发送 `G -0.02` 后，等价于 `g_car.line.gyro_damping = -0.02f`。如果 `G` 保持为 0，MPU6050 数据只用于显示，不参与循迹修正。
 
 ## 编译与下载
 
@@ -393,8 +454,11 @@ VOFA OFF
 TEST ON
 LINE ON
 SPD ON
+GYRO ON
 PID ON
 SHOW
+MPU CAL
+MPU SHOW
 ```
 
 命令说明：
@@ -406,8 +470,11 @@ SHOW
 | `TEST ON` | 发送测试波形，用于确认 VOFA+ 显示正常 |
 | `LINE ON` | 切换到循迹环调试数据 |
 | `SPD ON` | 切换到速度环调试数据 |
+| `GYRO ON` | 切换到 MPU6050 陀螺仪调试数据 |
 | `PID ON` | 等价于 `LINE ON` |
 | `SHOW` | 在 `VOFA OFF` 时回传当前参数 |
+| `MPU CAL` | 小车静止时重新校准 MPU6050 Z 轴零偏 |
+| `MPU SHOW` | 在 `VOFA OFF` 时回传当前参数和 MPU6050 状态 |
 
 建议第一次连接时先测试：
 
@@ -427,6 +494,23 @@ SPD ON
 ```text
 LINE ON
 ```
+
+如果要先确认 MPU6050 是否正常，保持小车静止，发送：
+
+```text
+GYRO ON
+VOFA ON
+```
+
+上电时已经自动校准过一次零偏。如果确认上电过程中小车一直静止，可以直接观察曲线；如果上电时车被碰过、曲线静止时明显不在 0 附近，先发送：
+
+```text
+VOFA OFF
+MPU CAL
+MPU SHOW
+```
+
+发送 `MPU CAL` 时小车必须放平并保持静止。`MPU SHOW` 用于查看 MPU6050 当前状态，重点确认 `PRESENT=1`、`VALID=1`，并且 `ERR` 不持续增加。
 
 ### 速度环曲线含义
 
@@ -456,6 +540,32 @@ VOFA+ 8 个通道含义：
 - 实测速度是否能稳定贴近目标速度。
 - PWM 是否长时间打满。
 - 误差是否持续偏大或来回振荡。
+
+### 陀螺仪曲线含义
+
+发送：
+
+```text
+GYRO ON
+VOFA ON
+```
+
+VOFA+ 8 个通道含义：
+
+| 通道 | 含义 |
+|---|---|
+| ch0 | 当前用于循迹补偿的 `g_car.line.gyro_z` |
+| ch1 | MPU6050 Z 轴原始值 `g_mpu6050.gyro_z_raw` |
+| ch2 | Z 轴零偏 `g_mpu6050.gyro_z_bias_dps` |
+| ch3 | 陀螺仪阻尼系数 `g_car.line.gyro_damping` |
+| ch4 | 当前陀螺仪补偿量 `gyro_damping * gyro_z` |
+| ch5 | `g_mpu6050.valid` |
+| ch6 | `g_mpu6050.error_count` |
+| ch7 | `g_mpu6050.sample_tick` |
+
+静止时 `ch0` 应接近 `0`。轻轻左右转动车身时，`ch0` 应出现正负变化。如果 `ch6` 持续增加，优先检查 SCL/SDA 接线、共地、供电和模块地址。
+
+`ch0` 对应完整变量名 `g_car.line.gyro_z`，这是循迹控制真正使用的陀螺仪输入；`ch3` 对应 `g_car.line.gyro_damping`，也就是蓝牙命令 `G x` 设置的补偿强度；`ch4` 是实际加入 PID 的补偿量 `g_car.line.gyro_damping * g_car.line.gyro_z`。
 
 ### 循迹环曲线含义
 
@@ -635,9 +745,10 @@ BASE 15
 | `P x` | 设置 `g_car.line.pid.kp` |
 | `I x` | 设置 `g_car.line.pid.ki` |
 | `D x` | 设置 `g_car.line.pid.kd` |
-| `G x` | 设置 `g_car.line.gyro_damping`，没有陀螺仪时通常保持 `0` |
+| `G x` | 设置 `g_car.line.gyro_damping`，支持正负值，默认保持 `0` |
 | `BASE x` | 设置 `g_car.line.base_counts` |
 | `LINEPID kp ki kd` | 一次设置循迹 `Kp Ki Kd`，并清循迹积分 |
+| `MPU CAL` | 小车静止时重新校准 MPU6050 Z 轴零偏 |
 | `STOP` | 停车，进入禁用模式 |
 | `START` | 恢复循迹闭环 |
 
@@ -660,6 +771,50 @@ D 0.3
 BASE 15
 ```
 
+MPU6050 稳定补偿推荐调试流程：
+
+先只确认 MPU6050 数据，不让它参与控制。默认 `g_car.line.gyro_damping = 0.0f`，所以即使 MPU6050 已经在读取，原来的循迹效果也不会被改变。
+
+```text
+VOFA OFF
+GYRO ON
+VOFA ON
+```
+
+静止时看 `ch0`，也就是 `g_car.line.gyro_z`，应该接近 `0`。轻轻用手让车头向左偏一点，再向右偏一点，`g_car.line.gyro_z` 应该出现一正一负的变化；具体左偏是正还是负不重要，后面可以用 `G` 的正负号修正补偿方向。
+
+如果上电时车被碰过，或者静止时 `g_car.line.gyro_z` 明显不接近 `0`，停止 VOFA 曲线后重新校准：
+
+```text
+VOFA OFF
+MPU CAL
+MPU SHOW
+GYRO ON
+VOFA ON
+```
+
+`MPU CAL` 会重新执行 `MPU6050_Calibrate()`，连续读取 64 次 Z 轴角速度并更新 `g_mpu6050.gyro_z_bias_dps`。校准时不能碰车，否则代码会把转动时的角速度也当成零偏。
+
+确认陀螺仪曲线正常后，再低速跑车测试补偿方向。`G x` 设置的是 `g_car.line.gyro_damping`，不是陀螺仪读数本身；`G 0.02` 表示把陀螺仪补偿强度设为 `0.02`。
+
+```text
+VOFA OFF
+LINE ON
+G 0.02
+START
+VOFA ON
+```
+
+如果车身摆动减小、直线更稳、入弯后回正更平滑，说明补偿方向基本正确，可以尝试 `G 0.05`、`G 0.08`。如果加了 `G 0.02` 后越跑越抖、直线左右甩得更厉害、入弯后修正过头，通常是补偿方向反了，改用：
+
+```text
+VOFA OFF
+G -0.02
+VOFA ON
+```
+
+方向反时不需要改 MPU6050 接线，也不需要重新安装传感器，只需要把 `G` 的符号改成负数。调参建议从 `0.02` 这种小值开始，逐步增加；如果 `G` 太大，小车会因为陀螺仪补偿过强而抖动。
+
 一般现象和处理：
 
 | 现象 | 调整方向 |
@@ -668,6 +823,7 @@ BASE 15
 | 车左右快速抖动 | 先减小 `P`，再减小或重新寻找 `D` |
 | 入弯时修正不够 | 适当增大 `P` 或降低 `BASE` |
 | 直道轻微摆动 | 降低 `P` 或增加少量 `D` |
+| 加入陀螺仪后更抖 | 减小 `G`，或把 `G` 改成负数 |
 | 长时间偏一边 | 确认电机速度环和机械安装，再少量尝试 `I` |
 
 ### 查看当前参数
@@ -684,6 +840,7 @@ SHOW
 LINE P=1.300 I=0.080 D=0.200 G=0.000 BASE=46 MODE=3
 LEFT P=180.000 I=0.350 D=26.000
 RIGHT P=180.000 I=0.280 D=18.000
+MPU ADDR=0x68 PRESENT=1 VALID=1 GZ=0.000 BIAS=0.123 ERR=0
 ```
 
 `VOFA ON` 时发送 `SHOW` 不会回复文本，避免影响曲线。
@@ -695,6 +852,12 @@ g_car.line.base_counts
 g_car.line.pid.kp
 g_car.line.pid.ki
 g_car.line.pid.kd
+g_car.line.gyro_z
+g_car.line.gyro_damping
+g_mpu6050.present
+g_mpu6050.valid
+g_mpu6050.gyro_z_filtered_dps
+g_mpu6050.error_count
 g_car.left.pid.kp
 g_car.left.pid.ki
 g_car.left.pid.kd
@@ -709,7 +872,9 @@ g_car.right.pid.kd
 2. 再调速度 PID，使左右轮在 `mode = 2` 下转速稳定。
 3. 然后进入 `mode = 3`，从较低的 `base_counts` 开始循迹。
 4. 根据偏航情况调整循迹 PID。
-5. 根据场地弯道情况调整 `right_angle_error` 和基础速度。
+5. 确认 MPU6050 静止零偏和转动方向正常。
+6. 从较小的 `G` 开始加入陀螺仪阻尼。
+7. 根据场地弯道情况调整 `right_angle_error` 和基础速度。
 
 ## 安全注意事项
 

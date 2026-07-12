@@ -79,7 +79,7 @@ volatile CarControl_t g_car =
     .left_target_counts = 0,
     .right_target_counts = 0,
     .gyro_z = 0.0f,
-    .gyro_damping = 0.0f,
+    .gyro_damping = 0.05f,
     .line_lost_stop = 1U,
   },
 };

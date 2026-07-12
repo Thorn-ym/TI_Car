@@ -6,6 +6,7 @@
 #include "car_control.h"
 #include "debug_uart.h"
 #include "line_tracker.h"
+#include "mpu6050.h"
 
 int main(void)
 {
@@ -13,6 +14,7 @@ int main(void)
 
     LineTracker_Init();
     Car_Init();
+    MPU6050_Init();
     Debug_UART_Init();
 
     g_car.left.pid.kp = 180;
@@ -32,6 +34,7 @@ int main(void)
     g_car.mode = 3;
 
     while (1) {
+        MPU6050_Task();
         Debug_UART_Task();
         __WFI();
     }

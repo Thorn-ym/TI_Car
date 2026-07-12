@@ -123,6 +123,22 @@ extern "C" {
 
 
 
+
+/* Defines for I2C_MPU */
+#define I2C_MPU_INST                                                        I2C1
+#define I2C_MPU_INST_IRQHandler                                  I2C1_IRQHandler
+#define I2C_MPU_INST_INT_IRQN                                      I2C1_INT_IRQn
+#define I2C_MPU_BUS_SPEED_HZ                                              400000
+#define GPIO_I2C_MPU_SDA_PORT                                              GPIOB
+#define GPIO_I2C_MPU_SDA_PIN                                       DL_GPIO_PIN_3
+#define GPIO_I2C_MPU_IOMUX_SDA                                   (IOMUX_PINCM16)
+#define GPIO_I2C_MPU_IOMUX_SDA_FUNC                    IOMUX_PINCM16_PF_I2C1_SDA
+#define GPIO_I2C_MPU_SCL_PORT                                              GPIOB
+#define GPIO_I2C_MPU_SCL_PIN                                       DL_GPIO_PIN_2
+#define GPIO_I2C_MPU_IOMUX_SCL                                   (IOMUX_PINCM15)
+#define GPIO_I2C_MPU_IOMUX_SCL_FUNC                    IOMUX_PINCM15_PF_I2C1_SCL
+
+
 /* Defines for UART_DEBUG */
 #define UART_DEBUG_INST                                                    UART1
 #define UART_DEBUG_INST_FREQUENCY                                       32000000
@@ -215,6 +231,7 @@ void SYSCFG_DL_SYSCTL_init(void);
 void SYSCFG_DL_PWM_0_init(void);
 void SYSCFG_DL_QEI_0_init(void);
 void SYSCFG_DL_TIMER_CONTROL_init(void);
+void SYSCFG_DL_I2C_MPU_init(void);
 void SYSCFG_DL_UART_DEBUG_init(void);
 
 

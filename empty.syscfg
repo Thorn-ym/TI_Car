@@ -17,6 +17,8 @@ const PWM = scripting.addModule("/ti/driverlib/PWM", {}, false);
 const PWM_MOTOR_CFG = PWM.addInstance();
 const QEI = scripting.addModule("/ti/driverlib/QEI", {}, false);
 const QEI_LEFT_CFG = QEI.addInstance();
+const I2C = scripting.addModule("/ti/driverlib/I2C", {}, false);
+const I2C_MPU_CFG = I2C.addInstance();
 const SYSCTL = scripting.addModule("/ti/driverlib/SYSCTL");
 const TIMER = scripting.addModule("/ti/driverlib/TIMER", {}, false);
 const TIMER_CONTROL_CFG = TIMER.addInstance();
@@ -106,6 +108,14 @@ QEI_LEFT_CFG.$name = "QEI_0";
 QEI_LEFT_CFG.peripheral.$assign = "TIMG8";
 QEI_LEFT_CFG.peripheral.ccp0Pin.$assign = "PB6";
 QEI_LEFT_CFG.peripheral.ccp1Pin.$assign = "PB7";
+
+I2C_MPU_CFG.$name = "I2C_MPU";
+I2C_MPU_CFG.basicEnableController = true;
+I2C_MPU_CFG.basicControllerBusSpeed = 400000;
+I2C_MPU_CFG.advAnalogGlitchFilter = "DISABLED";
+I2C_MPU_CFG.peripheral.$assign = "I2C1";
+I2C_MPU_CFG.peripheral.sclPin.$assign = "PB2";
+I2C_MPU_CFG.peripheral.sdaPin.$assign = "PB3";
 
 SYSCTL.forceDefaultClkConfig = true;
 SYSCTL.clockTreeEn = true;

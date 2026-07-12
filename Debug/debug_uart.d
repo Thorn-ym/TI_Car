@@ -84,7 +84,7 @@ debug_uart.o: ../debug_uart.c ../debug_uart.h ../car_control.h \
  F:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/dl_wwdt.h \
  F:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_interrupt.h \
  F:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_systick.h \
- ../line_tracker.h
+ ../line_tracker.h ../mpu6050.h
 ../debug_uart.h:
 ../car_control.h:
 ti_msp_dl_config.h:
@@ -171,3 +171,4 @@ F:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/dl_wwdt.h:
 F:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_interrupt.h:
 F:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_systick.h:
 ../line_tracker.h:
+../mpu6050.h:

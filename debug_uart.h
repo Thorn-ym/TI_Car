@@ -21,7 +21,7 @@ extern "C" {
 #define DEBUG_MODE_VOFA  2U
 
 #ifndef CAR_DEBUG_MODE
-#define CAR_DEBUG_MODE   DEBUG_MODE_OFF
+#define CAR_DEBUG_MODE   DEBUG_MODE_VOFA 
 #endif
 
 #if ((CAR_DEBUG_MODE != DEBUG_MODE_OFF) && \
@@ -41,6 +41,7 @@ void vofa_test_send(void);
 void vofa_pid_send(void);
 void vofa_line_send(void);
 void vofa_speed_send(void);
+void vofa_gyro_send(void);
 
 #ifdef __cplusplus
 }

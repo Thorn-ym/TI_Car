@@ -10,17 +10,19 @@
 #include "debug_uart.h"
 #include "car_control.h"
 #include "line_tracker.h"
+#include "mpu6050.h"
 #include "ti_msp_dl_config.h"
 
 #include <stddef.h>
 #include <stdint.h>
 
 #define DEBUG_UART_RX_BUFFER_SIZE    128U
-#define DEBUG_UART_LINE_BUFFER_SIZE  64U
+#define DEBUG_UART_LINE_BUFFER_SIZE  96U
 #define DEBUG_UART_VOFA_PERIOD_TICKS 5U
 #define DEBUG_UART_VOFA_MODE_TEST    0U
 #define DEBUG_UART_VOFA_MODE_LINE    1U
 #define DEBUG_UART_VOFA_MODE_SPEED   2U
+#define DEBUG_UART_VOFA_MODE_GYRO    3U
 
 #define DEBUG_UART_SEND_LITERAL(text) \
   Debug_UART_SendTextIfAllowed((text), (uint16_t)(sizeof(text) - 1U))
@@ -64,6 +66,9 @@ static uint16_t Debug_UART_AppendUInt(char *buffer,
                                       uint16_t pos,
                                       uint32_t value,
                                       uint8_t min_width);
+static uint16_t Debug_UART_AppendHexByte(char *buffer,
+                                         uint16_t pos,
+                                         uint8_t value);
 static uint16_t Debug_UART_AppendInt(char *buffer, uint16_t pos, int32_t value);
 static uint16_t Debug_UART_AppendFloat(char *buffer, uint16_t pos, float value);
 static void Debug_UART_SendOkFloat(const char *name, float value);
@@ -129,6 +134,10 @@ void Debug_UART_Task(void)
     {
       case DEBUG_UART_VOFA_MODE_SPEED:
         vofa_speed_send();
+        break;
+
+      case DEBUG_UART_VOFA_MODE_GYRO:
+        vofa_gyro_send();
         break;
 
       case DEBUG_UART_VOFA_MODE_LINE:
@@ -261,6 +270,26 @@ void vofa_speed_send(void)
   data[5] = (float)g_car.right.pwm_output;
   data[6] = (float)(g_car.left.target_counts - g_car.left.measured_counts);
   data[7] = (float)(g_car.right.target_counts - g_car.right.measured_counts);
+
+  debug_uart_send_bytes((const uint8_t *)data, (uint32_t)sizeof(data));
+  debug_uart_send_bytes(tail, (uint32_t)sizeof(tail));
+#endif
+}
+
+void vofa_gyro_send(void)
+{
+#if (CAR_DEBUG_MODE == DEBUG_MODE_VOFA)
+  float data[8];
+  static const uint8_t tail[4] = {0x00U, 0x00U, 0x80U, 0x7FU};
+
+  data[0] = g_car.line.gyro_z;
+  data[1] = (float)g_mpu6050.gyro_z_raw;
+  data[2] = g_mpu6050.gyro_z_bias_dps;
+  data[3] = g_car.line.gyro_damping;
+  data[4] = g_car.line.gyro_damping * g_car.line.gyro_z;
+  data[5] = (float)g_mpu6050.valid;
+  data[6] = (float)g_mpu6050.error_count;
+  data[7] = (float)g_mpu6050.sample_tick;
 
   debug_uart_send_bytes((const uint8_t *)data, (uint32_t)sizeof(data));
   debug_uart_send_bytes(tail, (uint32_t)sizeof(tail));
@@ -664,6 +693,18 @@ static uint16_t Debug_UART_AppendInt(char *buffer, uint16_t pos, int32_t value)
   return Debug_UART_AppendUInt(buffer, pos, magnitude, 1U);
 }
 
+static uint16_t Debug_UART_AppendHexByte(char *buffer,
+                                         uint16_t pos,
+                                         uint8_t value)
+{
+  static const char digits[] = "0123456789ABCDEF";
+
+  pos = Debug_UART_AppendChar(buffer, pos, digits[(value >> 4) & 0x0FU]);
+  pos = Debug_UART_AppendChar(buffer, pos, digits[value & 0x0FU]);
+
+  return pos;
+}
+
 static uint16_t Debug_UART_AppendFloat(char *buffer, uint16_t pos, float value)
 {
   uint32_t integer_part = 0U;
@@ -780,6 +821,24 @@ static void Debug_UART_SendStatus(void)
   pos = Debug_UART_AppendFloat(buffer, pos, g_car.right.pid.ki);
   pos = Debug_UART_AppendString(buffer, pos, " D=");
   pos = Debug_UART_AppendFloat(buffer, pos, g_car.right.pid.kd);
+  pos = Debug_UART_AppendString(buffer, pos, "\r\n");
+  buffer[pos] = '\0';
+
+  Debug_UART_SendTextIfAllowed(buffer, pos);
+
+  pos = 0U;
+  pos = Debug_UART_AppendString(buffer, pos, "MPU ADDR=0x");
+  pos = Debug_UART_AppendHexByte(buffer, pos, g_mpu6050.address);
+  pos = Debug_UART_AppendString(buffer, pos, " PRESENT=");
+  pos = Debug_UART_AppendInt(buffer, pos, (int32_t)g_mpu6050.present);
+  pos = Debug_UART_AppendString(buffer, pos, " VALID=");
+  pos = Debug_UART_AppendInt(buffer, pos, (int32_t)g_mpu6050.valid);
+  pos = Debug_UART_AppendString(buffer, pos, " GZ=");
+  pos = Debug_UART_AppendFloat(buffer, pos, g_mpu6050.gyro_z_filtered_dps);
+  pos = Debug_UART_AppendString(buffer, pos, " BIAS=");
+  pos = Debug_UART_AppendFloat(buffer, pos, g_mpu6050.gyro_z_bias_dps);
+  pos = Debug_UART_AppendString(buffer, pos, " ERR=");
+  pos = Debug_UART_AppendInt(buffer, pos, (int32_t)g_mpu6050.error_count);
   pos = Debug_UART_AppendString(buffer, pos, "\r\n");
   buffer[pos] = '\0';
 
@@ -1040,6 +1099,15 @@ static void Debug_UART_ParseCommand(const char *line)
   {
     Debug_UART_SendStatus();
   }
+  else if (Debug_UART_CommandEquals(line, "MPU SHOW") != 0U)
+  {
+    Debug_UART_SendStatus();
+  }
+  else if (Debug_UART_CommandEquals(line, "MPU CAL") != 0U)
+  {
+    MPU6050_Calibrate();
+    DEBUG_UART_SEND_LITERAL("OK MPU CAL\r\n");
+  }
   else if (Debug_UART_CommandEquals(line, "VOFA ON") != 0U)
   {
 #if (CAR_DEBUG_MODE == DEBUG_MODE_VOFA)
@@ -1075,6 +1143,11 @@ static void Debug_UART_ParseCommand(const char *line)
   {
     s_vofa_mode = DEBUG_UART_VOFA_MODE_SPEED;
     DEBUG_UART_SEND_LITERAL("OK SPD ON\r\n");
+  }
+  else if (Debug_UART_CommandEquals(line, "GYRO ON") != 0U)
+  {
+    s_vofa_mode = DEBUG_UART_VOFA_MODE_GYRO;
+    DEBUG_UART_SEND_LITERAL("OK GYRO ON\r\n");
   }
   else if (*Debug_UART_SkipSpaces(line) != '\0')
   {

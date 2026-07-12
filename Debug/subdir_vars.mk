@@ -14,7 +14,8 @@ C_SRCS += \
 ../empty.c \
 ./ti_msp_dl_config.c \
 F:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/msp/m0p/startup_system_files/ticlang/startup_mspm0g350x_ticlang.c \
-../line_tracker.c 
+../line_tracker.c \
+../mpu6050.c 
 
 GEN_CMDS += \
 ./device_linker.cmd 
@@ -30,7 +31,8 @@ C_DEPS += \
 ./empty.d \
 ./ti_msp_dl_config.d \
 ./startup_mspm0g350x_ticlang.d \
-./line_tracker.d 
+./line_tracker.d \
+./mpu6050.d 
 
 GEN_OPTS += \
 ./device.opt 
@@ -41,7 +43,8 @@ OBJS += \
 ./empty.o \
 ./ti_msp_dl_config.o \
 ./startup_mspm0g350x_ticlang.o \
-./line_tracker.o 
+./line_tracker.o \
+./mpu6050.o 
 
 GEN_MISC_FILES += \
 ./device.cmd.genlibs \
@@ -54,7 +57,8 @@ OBJS__QUOTED += \
 "empty.o" \
 "ti_msp_dl_config.o" \
 "startup_mspm0g350x_ticlang.o" \
-"line_tracker.o" 
+"line_tracker.o" \
+"mpu6050.o" 
 
 GEN_MISC_FILES__QUOTED += \
 "device.cmd.genlibs" \
@@ -67,7 +71,8 @@ C_DEPS__QUOTED += \
 "empty.d" \
 "ti_msp_dl_config.d" \
 "startup_mspm0g350x_ticlang.d" \
-"line_tracker.d" 
+"line_tracker.d" \
+"mpu6050.d" 
 
 GEN_FILES__QUOTED += \
 "device_linker.cmd" \
@@ -80,7 +85,8 @@ C_SRCS__QUOTED += \
 "../empty.c" \
 "./ti_msp_dl_config.c" \
 "F:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/msp/m0p/startup_system_files/ticlang/startup_mspm0g350x_ticlang.c" \
-"../line_tracker.c" 
+"../line_tracker.c" \
+"../mpu6050.c" 
 
 SYSCFG_SRCS__QUOTED += \
 "../empty.syscfg" 
