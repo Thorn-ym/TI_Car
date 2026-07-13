@@ -9,6 +9,7 @@
 
 #include "car_control.h"
 #include "line_tracker.h"
+#include "mpu6050.h"
 
 volatile CarControl_t g_car =
 {
@@ -79,7 +80,23 @@ volatile CarControl_t g_car =
     .left_target_counts = 0,
     .right_target_counts = 0,
     .gyro_z = 0.0f,
-    .gyro_damping = 0.05f,
+    .gyro_damping = 0.04f,
+    .right_angle_yaw_deg = 0.0f,
+    .right_angle_target_deg = 65.0f,
+    .right_angle_center_min_deg = 45.0f,
+    .right_angle_gyro_deadband_dps = 2.0f,
+    .right_angle_base_counts = 16,
+    .right_angle_turn_counts = 12,
+    .right_angle_start_tick = 0U,
+    .right_angle_last_tick = 0U,
+    .right_angle_timeout_ticks = 70U,
+    .right_angle_assist_enable = 1U,
+    .right_angle_assist_active = 0U,
+    .right_angle_cooldown = 0U,
+    .right_angle_assist_direction = 0,
+    .right_angle_center_seen_count = 0U,
+    .right_angle_cooldown_center_count = 0U,
+    .right_angle_center_confirm_ticks = 3U,
     .line_lost_stop = 1U,
   },
 };
@@ -90,10 +107,17 @@ static uint8_t s_right_encoder_state = 0U;
 static int16_t Car_LimitPwm(int32_t pwm);
 static float Car_AbsFloat(float value);
 static float Car_LimitFloat(float value, float limit);
+static int32_t Car_LimitTargetCounts(int32_t counts);
 static int16_t Car_PidStep(volatile CarMotor_t *motor);
 static int32_t Car_LinePidStep(int32_t error);
 static void Car_ResetPid(volatile CarMotor_t *motor);
 static void Car_ResetLinePid(void);
+static uint8_t Car_RightAngleCenterSeen(void);
+static void Car_RightAngleAssistStart(int8_t direction);
+static void Car_RightAngleAssistStop(void);
+static void Car_RightAngleAssistUpdateCooldown(void);
+static uint8_t Car_RightAngleAssistCanStart(void);
+static uint8_t Car_RightAngleAssistStep(int16_t *left_pwm, int16_t *right_pwm);
 static void Car_UpdateLeftEncoder(volatile CarMotor_t *motor);
 static void Car_UpdateRightEncoder(volatile CarMotor_t *motor);
 static void Car_SetDriverEnable(uint8_t enable);
@@ -155,6 +179,11 @@ void Car_ControlStep(void)
       break;
 
     case CAR_MODE_LINE_FOLLOW:
+      if (Car_RightAngleAssistStep(&left_pwm, &right_pwm) != 0U)
+      {
+        break;
+      }
+
       if ((g_line.line_seen != 0U) || (g_car.line.line_lost_stop == 0U))
       {
         int32_t correction = Car_LinePidStep((int32_t)g_line.error);
@@ -172,6 +201,7 @@ void Car_ControlStep(void)
       }
       else
       {
+        Car_RightAngleAssistStop();
         g_car.line.correction_counts = 0;
         g_car.line.left_target_counts = 0;
         g_car.line.right_target_counts = 0;
@@ -187,6 +217,7 @@ void Car_ControlStep(void)
 
     case CAR_MODE_DISABLED:
     default:
+      Car_RightAngleAssistStop();
       Car_ResetLinePid();
       Car_ResetPid(&g_car.left);
       Car_ResetPid(&g_car.right);
@@ -317,6 +348,21 @@ static float Car_LimitFloat(float value, float limit)
   return value;
 }
 
+static int32_t Car_LimitTargetCounts(int32_t counts)
+{
+  if (counts < 0)
+  {
+    return 0;
+  }
+
+  if (counts > CAR_RIGHT_ANGLE_TARGET_COUNTS_MAX)
+  {
+    return CAR_RIGHT_ANGLE_TARGET_COUNTS_MAX;
+  }
+
+  return counts;
+}
+
 static int16_t Car_PidStep(volatile CarMotor_t *motor)
 {
   float error = (float)motor->target_counts - (float)motor->measured_counts;
@@ -367,6 +413,169 @@ static void Car_ResetLinePid(void)
 {
   g_car.line.pid.integral = 0.0f;
   g_car.line.pid.previous_error = 0.0f;
+}
+
+static uint8_t Car_RightAngleCenterSeen(void)
+{
+  return ((g_line.active_mask & 0x1CU) != 0U) ? 1U : 0U;
+}
+
+static void Car_RightAngleAssistStart(int8_t direction)
+{
+  g_car.line.right_angle_assist_active = 1U;
+  g_car.line.right_angle_assist_direction = direction;
+  g_car.line.right_angle_yaw_deg = 0.0f;
+  g_car.line.right_angle_start_tick = g_car.control_tick;
+  g_car.line.right_angle_last_tick = g_car.control_tick;
+  g_car.line.right_angle_center_seen_count = 0U;
+  g_car.line.right_angle_cooldown_center_count = 0U;
+
+  Car_ResetLinePid();
+  Car_ResetPid(&g_car.left);
+  Car_ResetPid(&g_car.right);
+}
+
+static void Car_RightAngleAssistStop(void)
+{
+  if (g_car.line.right_angle_assist_active != 0U)
+  {
+    g_car.line.right_angle_cooldown = 1U;
+  }
+
+  g_car.line.right_angle_assist_active = 0U;
+  g_car.line.right_angle_assist_direction = 0;
+  g_car.line.right_angle_center_seen_count = 0U;
+}
+
+static void Car_RightAngleAssistUpdateCooldown(void)
+{
+  if (g_car.line.right_angle_cooldown == 0U)
+  {
+    return;
+  }
+
+  if ((g_line.right_angle_detected == 0U) && (Car_RightAngleCenterSeen() != 0U))
+  {
+    if (g_car.line.right_angle_cooldown_center_count <
+        g_car.line.right_angle_center_confirm_ticks)
+    {
+      g_car.line.right_angle_cooldown_center_count++;
+    }
+
+    if (g_car.line.right_angle_cooldown_center_count >=
+        g_car.line.right_angle_center_confirm_ticks)
+    {
+      g_car.line.right_angle_cooldown = 0U;
+      g_car.line.right_angle_cooldown_center_count = 0U;
+    }
+  }
+  else
+  {
+    g_car.line.right_angle_cooldown_center_count = 0U;
+  }
+}
+
+static uint8_t Car_RightAngleAssistCanStart(void)
+{
+  return ((g_car.line.right_angle_assist_enable != 0U) &&
+          (g_car.line.right_angle_assist_active == 0U) &&
+          (g_car.line.right_angle_cooldown == 0U) &&
+          (g_line.right_angle_detected != 0U) &&
+          (g_line.right_angle_direction != 0) &&
+          (g_mpu6050.present != 0U) &&
+          (g_mpu6050.valid != 0U)) ? 1U : 0U;
+}
+
+static uint8_t Car_RightAngleAssistStep(int16_t *left_pwm, int16_t *right_pwm)
+{
+  int32_t base = 0;
+  int32_t turn = 0;
+  int32_t left_target = 0;
+  int32_t right_target = 0;
+  uint8_t should_stop = 0U;
+
+  Car_RightAngleAssistUpdateCooldown();
+
+  if (g_car.line.right_angle_assist_active == 0U)
+  {
+    if (Car_RightAngleAssistCanStart() != 0U)
+    {
+      Car_RightAngleAssistStart(g_line.right_angle_direction);
+    }
+    else
+    {
+      return 0U;
+    }
+  }
+
+  if ((g_mpu6050.present == 0U) || (g_mpu6050.valid == 0U))
+  {
+    Car_RightAngleAssistStop();
+    return 0U;
+  }
+
+  {
+    uint32_t delta_ticks =
+        g_car.control_tick - g_car.line.right_angle_last_tick;
+    float dt_s = ((float)delta_ticks *
+                  (float)g_car.control_period_ms) * 0.001f;
+    float gyro = Car_AbsFloat(g_car.line.gyro_z);
+
+    if (gyro < g_car.line.right_angle_gyro_deadband_dps)
+    {
+      gyro = 0.0f;
+    }
+
+    g_car.line.right_angle_yaw_deg += gyro * dt_s;
+    g_car.line.right_angle_last_tick = g_car.control_tick;
+  }
+
+  if ((g_car.line.right_angle_yaw_deg >=
+       g_car.line.right_angle_center_min_deg) &&
+      (Car_RightAngleCenterSeen() != 0U))
+  {
+    if (g_car.line.right_angle_center_seen_count <
+        g_car.line.right_angle_center_confirm_ticks)
+    {
+      g_car.line.right_angle_center_seen_count++;
+    }
+  }
+  else
+  {
+    g_car.line.right_angle_center_seen_count = 0U;
+  }
+
+  if ((g_car.line.right_angle_yaw_deg >=
+       g_car.line.right_angle_target_deg) ||
+      (g_car.line.right_angle_center_seen_count >=
+       g_car.line.right_angle_center_confirm_ticks) ||
+      ((g_car.control_tick - g_car.line.right_angle_start_tick) >=
+       g_car.line.right_angle_timeout_ticks))
+  {
+    should_stop = 1U;
+  }
+
+  base = g_car.line.right_angle_base_counts;
+  turn = ((int32_t)g_car.line.right_angle_assist_direction) *
+         g_car.line.right_angle_turn_counts;
+  left_target = Car_LimitTargetCounts(base - turn);
+  right_target = Car_LimitTargetCounts(base + turn);
+
+  g_car.line.correction_counts = turn;
+  g_car.line.left_target_counts = left_target;
+  g_car.line.right_target_counts = right_target;
+  g_car.left.target_counts = left_target;
+  g_car.right.target_counts = right_target;
+
+  *left_pwm = Car_PidStep(&g_car.left);
+  *right_pwm = Car_PidStep(&g_car.right);
+
+  if (should_stop != 0U)
+  {
+    Car_RightAngleAssistStop();
+  }
+
+  return 1U;
 }
 
 static void Car_UpdateLeftEncoder(volatile CarMotor_t *motor)

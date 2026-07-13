@@ -21,6 +21,7 @@ extern "C" {
 #define CAR_PWM_MAX               3199
 #define CAR_PID_OUTPUT_MAX        3199.0f
 #define CAR_PID_INTEGRAL_MAX      3199.0f
+#define CAR_RIGHT_ANGLE_TARGET_COUNTS_MAX 80
 
 typedef enum
 {
@@ -65,6 +66,22 @@ typedef struct
   int32_t right_target_counts;
   float gyro_z;
   float gyro_damping;
+  float right_angle_yaw_deg;
+  float right_angle_target_deg;
+  float right_angle_center_min_deg;
+  float right_angle_gyro_deadband_dps;
+  int32_t right_angle_base_counts;
+  int32_t right_angle_turn_counts;
+  uint32_t right_angle_start_tick;
+  uint32_t right_angle_last_tick;
+  uint32_t right_angle_timeout_ticks;
+  uint8_t right_angle_assist_enable;
+  uint8_t right_angle_assist_active;
+  uint8_t right_angle_cooldown;
+  int8_t right_angle_assist_direction;
+  uint8_t right_angle_center_seen_count;
+  uint8_t right_angle_cooldown_center_count;
+  uint8_t right_angle_center_confirm_ticks;
   uint8_t line_lost_stop;
 } CarLineFollow_t;
 
