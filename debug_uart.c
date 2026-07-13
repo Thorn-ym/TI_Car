@@ -795,6 +795,12 @@ static void Debug_UART_SendStatus(void)
   pos = Debug_UART_AppendFloat(buffer, pos, g_car.line.gyro_damping);
   pos = Debug_UART_AppendString(buffer, pos, " BASE=");
   pos = Debug_UART_AppendInt(buffer, pos, g_car.line.base_counts);
+  pos = Debug_UART_AppendString(buffer, pos, " APP=");
+  pos = Debug_UART_AppendInt(buffer, pos,
+                             g_car.line.right_angle_approach_counts);
+  pos = Debug_UART_AppendString(buffer, pos, " APPSPD=");
+  pos = Debug_UART_AppendInt(buffer, pos,
+                             g_car.line.right_angle_approach_speed_counts);
   pos = Debug_UART_AppendString(buffer, pos, " MODE=");
   pos = Debug_UART_AppendInt(buffer, pos, (int32_t)g_car.mode);
   pos = Debug_UART_AppendString(buffer, pos, "\r\n");
@@ -915,6 +921,40 @@ static void Debug_UART_ParseCommand(const char *line)
     else
     {
       DEBUG_UART_SEND_LITERAL("ERR BASE\r\n");
+    }
+  }
+  else if (Debug_UART_GetArg(line, "APPROACH", &arg) != 0U)
+  {
+    if (Debug_UART_ParseFloat(arg, &value) != 0U)
+    {
+      base = Debug_UART_FloatToInt(value);
+      if (base < 0)
+      {
+        base = 0;
+      }
+      g_car.line.right_angle_approach_counts = base;
+      Debug_UART_SendOkInt("APPROACH", base);
+    }
+    else
+    {
+      DEBUG_UART_SEND_LITERAL("ERR APPROACH\r\n");
+    }
+  }
+  else if (Debug_UART_GetArg(line, "APPSPD", &arg) != 0U)
+  {
+    if (Debug_UART_ParseFloat(arg, &value) != 0U)
+    {
+      base = Debug_UART_FloatToInt(value);
+      if (base < 0)
+      {
+        base = 0;
+      }
+      g_car.line.right_angle_approach_speed_counts = base;
+      Debug_UART_SendOkInt("APPSPD", base);
+    }
+    else
+    {
+      DEBUG_UART_SEND_LITERAL("ERR APPSPD\r\n");
     }
   }
   else if (Debug_UART_GetArg(line, "LP", &arg) != 0U)
