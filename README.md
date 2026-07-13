@@ -815,6 +815,85 @@ VOFA ON
 
 方向反时不需要改 MPU6050 接线，也不需要重新安装传感器，只需要把 `G` 的符号改成负数。调参建议从 `0.02` 这种小值开始，逐步增加；如果 `G` 太大，小车会因为陀螺仪补偿过强而抖动。
 
+### MPU6050 辅助直角转弯逻辑与调参
+
+直角转弯有两层逻辑。第一层仍然是七路循迹模块识别直角，不改变原来的检测方式：
+
+| 触发条件 | 方向变量 | 含义 |
+|---|---:|---|
+| `S1~S4` 同时触发 | `g_line.right_angle_direction = 1` | 左直角 |
+| `S4~S7` 同时触发 | `g_line.right_angle_direction = -1` | 右直角 |
+
+第二层是 MPU6050 辅助。只有 `g_mpu6050.present = 1` 且 `g_mpu6050.valid = 1` 时，检测到直角才会进入辅助转弯。辅助期间代码不直接控制 PWM，而是设置左右轮速度 PID 的目标速度：
+
+```c
+turn = direction * g_car.line.right_angle_turn_counts;
+left_target = g_car.line.right_angle_base_counts - turn;
+right_target = g_car.line.right_angle_base_counts + turn;
+```
+
+默认 `base = 18`、`turn = 18`，所以左直角时目标速度为 `0 / 36`，右直角时目标速度为 `36 / 0`。这两个数是编码器速度目标 `target_counts`，不是 PWM。
+
+辅助转弯期间，代码每 10ms 在 `Car_ControlStep()` 中用 `g_car.line.gyro_z` 积分估算已经转过的角度。`abs(gyro_z) < 2.0 deg/s` 时按 0 处理，避免静止噪声慢慢累计角度。满足下面任一条件就退出辅助：
+
+| 退出条件 | 说明 |
+|---|---|
+| `right_angle_yaw_deg >= right_angle_target_deg` | 已经转到目标角度 |
+| 转过至少 `right_angle_center_min_deg`，且 `S3/S4/S5` 连续看到线 | 提前捕捉到出弯后的中线 |
+| 超过 `right_angle_timeout_ticks` | 防止一直转 |
+| MPU6050 变为无效 | 不继续使用错误的陀螺仪数据 |
+
+退出后会进入 `right_angle_cooldown`，避免同一个直角因为传感器信号持续触发而重复进入辅助。只有 `right_angle_detected = 0`，并且 `S3/S4/S5` 连续 3 次看到线后，才允许下一次直角辅助。
+
+常用参数在 `car_control.c` 的 `g_car.line` 初始化里，也可以在 CCS/Ozone 的 Watch 窗口临时修改：
+
+| 参数 | 默认值 | 作用 |
+|---|---:|---|
+| `g_car.line.right_angle_assist_enable` | `1` | 是否开启 MPU6050 直角辅助，改成 `0` 可退回旧直角逻辑 |
+| `g_car.line.right_angle_target_deg` | `82.0f` | 目标转角，越大转得越多，越小越早退出 |
+| `g_car.line.right_angle_center_min_deg` | `45.0f` | 至少转过多少度后才允许用中线提前退出 |
+| `g_car.line.right_angle_gyro_deadband_dps` | `2.0f` | 陀螺仪角速度死区，小于该值不累计角度 |
+| `g_car.line.right_angle_base_counts` | `18` | 直角辅助基础速度 |
+| `g_car.line.right_angle_turn_counts` | `18` | 直角辅助差速量 |
+| `g_car.line.right_angle_timeout_ticks` | `90` | 超时退出周期数，90 个 10ms 周期约 900ms |
+| `g_car.line.right_angle_center_confirm_ticks` | `3` | 中线连续确认次数，防止扫到杂线就退出 |
+
+调试时建议先观察这些变量：
+
+```c
+g_car.line.right_angle_assist_active
+g_car.line.right_angle_assist_direction
+g_car.line.right_angle_yaw_deg
+g_car.line.left_target_counts
+g_car.line.right_target_counts
+g_mpu6050.present
+g_mpu6050.valid
+g_car.line.gyro_z
+```
+
+如果小车一下子转向太多，出弯后还需要回调才回到正确轨迹，优先减小目标角度：
+
+```c
+g_car.line.right_angle_target_deg = 78.0f;
+```
+
+还会过头时继续降到 `75.0f` 左右。如果车是猛地甩过去，而不是慢慢转过头，就把转弯动作调柔：
+
+```c
+g_car.line.right_angle_base_counts = 16;
+g_car.line.right_angle_turn_counts = 12;
+```
+
+这样左直角会从默认 `0 / 36` 变成 `4 / 28`，转弯更圆滑。如果还没转完就提前退出，把 `right_angle_center_min_deg` 从 `45.0f` 提到 `50.0f~55.0f`；如果捕线太晚，把它降到 `35.0f~40.0f`。
+
+如果小车转不够，出弯压内侧，优先增大目标角度：
+
+```c
+g_car.line.right_angle_target_deg = 86.0f;
+```
+
+必要时再略微增加 `right_angle_turn_counts` 或降低普通循迹基础速度。调直角辅助时不要优先改 `gyro_damping`，它主要影响普通循迹 PID，不是直角辅助转弯的主要参数。
+
 一般现象和处理：
 
 | 现象 | 调整方向 |
