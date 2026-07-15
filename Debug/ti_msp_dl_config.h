@@ -128,7 +128,7 @@ extern "C" {
 #define I2C_MPU_INST                                                        I2C1
 #define I2C_MPU_INST_IRQHandler                                  I2C1_IRQHandler
 #define I2C_MPU_INST_INT_IRQN                                      I2C1_INT_IRQn
-#define I2C_MPU_BUS_SPEED_HZ                                              400000
+#define I2C_MPU_BUS_SPEED_HZ                                              100000
 #define GPIO_I2C_MPU_SDA_PORT                                              GPIOB
 #define GPIO_I2C_MPU_SDA_PIN                                       DL_GPIO_PIN_3
 #define GPIO_I2C_MPU_IOMUX_SDA                                   (IOMUX_PINCM16)
@@ -210,9 +210,10 @@ extern "C" {
 #define GPIO_ENCODER_PORT                                                (GPIOA)
 
 /* Defines for E2A: GPIOA.0 with pinCMx 1 on package pin 33 */
-// pins affected by this interrupt request:["E2A","E2B"]
-#define GPIO_ENCODER_INT_IRQN                                   (GPIOA_INT_IRQn)
-#define GPIO_ENCODER_INT_IIDX                   (DL_INTERRUPT_GROUP1_IIDX_GPIOA)
+// groups represented: ["GPIO_EC11","GPIO_ENCODER"]
+// pins affected: ["A","B","E2A","E2B"]
+#define GPIO_MULTIPLE_GPIOA_INT_IRQN                            (GPIOA_INT_IRQn)
+#define GPIO_MULTIPLE_GPIOA_INT_IIDX            (DL_INTERRUPT_GROUP1_IIDX_GPIOA)
 #define GPIO_ENCODER_E2A_IIDX                                (DL_GPIO_IIDX_DIO0)
 #define GPIO_ENCODER_E2A_PIN                                     (DL_GPIO_PIN_0)
 #define GPIO_ENCODER_E2A_IOMUX                                    (IOMUX_PINCM1)
@@ -220,6 +221,20 @@ extern "C" {
 #define GPIO_ENCODER_E2B_IIDX                                (DL_GPIO_IIDX_DIO1)
 #define GPIO_ENCODER_E2B_PIN                                     (DL_GPIO_PIN_1)
 #define GPIO_ENCODER_E2B_IOMUX                                    (IOMUX_PINCM2)
+/* Port definition for Pin Group GPIO_EC11 */
+#define GPIO_EC11_PORT                                                   (GPIOA)
+
+/* Defines for A: GPIOA.13 with pinCMx 35 on package pin 6 */
+#define GPIO_EC11_A_IIDX                                    (DL_GPIO_IIDX_DIO13)
+#define GPIO_EC11_A_PIN                                         (DL_GPIO_PIN_13)
+#define GPIO_EC11_A_IOMUX                                        (IOMUX_PINCM35)
+/* Defines for B: GPIOA.12 with pinCMx 34 on package pin 5 */
+#define GPIO_EC11_B_IIDX                                    (DL_GPIO_IIDX_DIO12)
+#define GPIO_EC11_B_PIN                                         (DL_GPIO_PIN_12)
+#define GPIO_EC11_B_IOMUX                                        (IOMUX_PINCM34)
+/* Defines for SW: GPIOA.27 with pinCMx 60 on package pin 31 */
+#define GPIO_EC11_SW_PIN                                        (DL_GPIO_PIN_27)
+#define GPIO_EC11_SW_IOMUX                                       (IOMUX_PINCM60)
 
 
 /* clang-format on */

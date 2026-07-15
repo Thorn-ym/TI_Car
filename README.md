@@ -104,7 +104,7 @@
 | GND | GND | 必须共地 |
 | VCC | 3.3V | 建议使用 3.3V 供电 |
 
-I2C 总线速度配置为 `400kHz`。MPU6050 代码会优先检测地址 `0x68`，失败后自动尝试 `0x69`。常见 0.96 寸 OLED 地址为 `0x3C` 或 `0x3D`，和 MPU6050 地址不冲突。
+I2C 总线速度配置为 `100kHz`，这样 OLED 和 MPU6050 共线时对模块上拉电阻、杜邦线长度更宽容。MPU6050 代码会优先检测地址 `0x68`，失败后自动尝试 `0x69`。常见 0.96 寸 OLED 地址为 `0x3C` 或 `0x3D`，和 MPU6050 地址不冲突。
 
 如果 OLED 模块板上带上拉电阻，要确认 SCL/SDA 只被上拉到 3.3V。不要让 OLED 或 MPU6050 的 I2C 信号被 5V 上拉到 MSPM0G3507 引脚。
 
@@ -159,8 +159,18 @@ g_car.right.invert_encoder = 1;
 | `car_control.h` | 小车控制结构体、模式枚举和公共接口 |
 | `line_tracker.c` | 七路循迹采样、加权误差、直角弯识别 |
 | `line_tracker.h` | 循迹结构体和公共接口 |
+| `board_i2c.c` | `I2C1` 阻塞读写封装，供 MPU6050 和 OLED 共用 |
+| `board_i2c.h` | 共享 I2C 接口声明 |
 | `mpu6050.c` | MPU6050 初始化、零偏校准、Z 轴角速度读取和滤波 |
 | `mpu6050.h` | MPU6050 状态结构体和公共接口 |
+| `oled_ssd1306.c` | 0.96 寸 SSD1306 OLED 初始化、清屏、中文选题界面显示 |
+| `oled_ssd1306.h` | OLED 状态结构体和显示接口 |
+| `ec11_encoder.c` | EC11 A/B 中断解码、按键消抖、单击/长按事件 |
+| `ec11_encoder.h` | EC11 状态结构体和输入事件接口 |
+| `problem_menu.c` | OLED + EC11 选题状态机 |
+| `problem_menu.h` | 选题状态结构体和任务接口 |
+| `competition_tasks.c` | 第 1 到第 8 题的 `Enter/Task/Exit` 代码入口 |
+| `competition_tasks.h` | 比赛题目框架接口 |
 | `debug_uart.c` | 蓝牙 UART、VOFA+ JustFloat 曲线发送、在线 PID 调参命令 |
 | `debug_uart.h` | 蓝牙调试接口声明 |
 
@@ -171,14 +181,20 @@ g_car.right.invert_encoder = 1;
 ```c
 SYSCFG_DL_init();
 LineTracker_Init();
+EC11_Init();
 Car_Init();
 MPU6050_Init();
+OLED_Init();
+ProblemMenu_Init();
+Debug_UART_Init();
 ```
 
 主循环会调用：
 
 ```c
 MPU6050_Task();
+EC11_Task();
+ProblemMenu_Task();
 Debug_UART_Task();
 ```
 
@@ -197,8 +213,12 @@ g_car.right.pid.kd = 18;
 
 g_car.left.target_counts = 26;
 g_car.right.target_counts = 26;
-g_car.mode = CAR_MODE_LINE_FOLLOW;
+Car_Stop();
 ```
+
+上电后小车先保持停止，OLED 进入“选择第 N 题”界面。EC11 每旋转 1 格题号加 1 或减 1，范围限制在 `1..8`；单击按键确认后显示“已经选择第 N 题”，并进入对应题目的 `Enter` 函数。当前 8 道题的默认 `Enter` 都会调用 `Car_StartLineFollow()`，所以确认任意题后都会先运行现有基础循迹功能。
+
+长按 EC11 按键 1 秒会退出当前题目，调用该题的 `Exit`，执行 `Car_Stop()`，然后回到选题界面。后续比赛题目确定后，把对应逻辑填到 `competition_tasks.c` 里的 `Problem1_Enter/Task/Exit` 到 `Problem8_Enter/Task/Exit` 中即可。
 
 控制周期由 `TIMG12` 产生，周期为 10ms。每次中断调用：
 

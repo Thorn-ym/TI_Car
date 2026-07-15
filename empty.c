@@ -5,16 +5,22 @@
 #include "ti_msp_dl_config.h"
 #include "car_control.h"
 #include "debug_uart.h"
+#include "ec11_encoder.h"
 #include "line_tracker.h"
 #include "mpu6050.h"
+#include "oled_ssd1306.h"
+#include "problem_menu.h"
 
 int main(void)
 {
     SYSCFG_DL_init();
 
     LineTracker_Init();
+    EC11_Init();
     Car_Init();
+    OLED_Init();
     MPU6050_Init();
+    ProblemMenu_Init();
     Debug_UART_Init();
 
     g_car.left.pid.kp = 180;
@@ -31,10 +37,12 @@ int main(void)
 
     g_car.left.target_counts = 26;
     g_car.right.target_counts = 26;
-    g_car.mode = 3;
+    Car_Stop();
 
     while (1) {
         MPU6050_Task();
+        EC11_Task();
+        ProblemMenu_Task();
         Debug_UART_Task();
         __WFI();
     }

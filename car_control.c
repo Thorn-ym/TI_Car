@@ -8,6 +8,7 @@
 /* USER CODE END Header */
 
 #include "car_control.h"
+#include "ec11_encoder.h"
 #include "line_tracker.h"
 #include "mpu6050.h"
 
@@ -165,7 +166,11 @@ void Car_Init(void)
 
   Car_Stop();
 
+#ifdef GPIO_MULTIPLE_GPIOA_INT_IRQN
+  NVIC_EnableIRQ(GPIO_MULTIPLE_GPIOA_INT_IRQN);
+#else
   NVIC_EnableIRQ(GPIO_ENCODER_INT_IRQN);
+#endif
   NVIC_EnableIRQ(TIMER_CONTROL_INST_INT_IRQN);
   DL_TimerG_startCounter(TIMER_CONTROL_INST);
 }
@@ -311,13 +316,22 @@ void Car_SetSpeedTargets(int32_t left_counts, int32_t right_counts)
 void GROUP1_IRQHandler(void)
 {
   uint32_t gpioa = DL_GPIO_getEnabledInterruptStatus(
-      GPIOA, GPIO_ENCODER_E2A_PIN | GPIO_ENCODER_E2B_PIN);
+      GPIOA,
+      GPIO_ENCODER_E2A_PIN | GPIO_ENCODER_E2B_PIN |
+      GPIO_EC11_A_PIN | GPIO_EC11_B_PIN);
 
   if ((gpioa & (GPIO_ENCODER_E2A_PIN | GPIO_ENCODER_E2B_PIN)) != 0U)
   {
     Car_UpdateRightEncoderCount();
     DL_GPIO_clearInterruptStatus(
         GPIOA, gpioa & (GPIO_ENCODER_E2A_PIN | GPIO_ENCODER_E2B_PIN));
+  }
+
+  if ((gpioa & (GPIO_EC11_A_PIN | GPIO_EC11_B_PIN)) != 0U)
+  {
+    EC11_HandleABInterrupt(gpioa);
+    DL_GPIO_clearInterruptStatus(
+        GPIOA, gpioa & (GPIO_EC11_A_PIN | GPIO_EC11_B_PIN));
   }
 }
 
