@@ -169,7 +169,7 @@ g_car.right.invert_encoder = 1;
 | `ec11_encoder.h` | EC11 状态结构体和输入事件接口 |
 | `problem_menu.c` | OLED + EC11 选题状态机 |
 | `problem_menu.h` | 选题状态结构体和任务接口 |
-| `competition_tasks.c` | 第 1 到第 8 题的 `Enter/Task/Exit` 代码入口 |
+| `competition_tasks.c` | 第 1 到第 5 题的 `Enter/Task/Exit` 代码入口 |
 | `competition_tasks.h` | 比赛题目框架接口 |
 | `debug_uart.c` | 蓝牙 UART、VOFA+ JustFloat 曲线发送、在线 PID 调参命令 |
 | `debug_uart.h` | 蓝牙调试接口声明 |
@@ -216,9 +216,9 @@ g_car.right.target_counts = 26;
 Car_Stop();
 ```
 
-上电后小车先保持停止，OLED 进入“选择第 N 题”界面。EC11 每旋转 1 格题号加 1 或减 1，范围限制在 `1..8`；单击按键确认后显示“已经选择第 N 题”，并进入对应题目的 `Enter` 函数。当前 8 道题的默认 `Enter` 都会调用 `Car_StartLineFollow()`，所以确认任意题后都会先运行现有基础循迹功能。
+上电后小车先保持停止，OLED 同时显示“第 1 题”到“第 5 题”。EC11 每旋转 1 格移动一行，当前行左侧显示三角箭头，并使用实心反色区域突出当前题目；题号范围限制在 `1..5`。单击按键确认后显示“已经选择第 N 题”，并进入对应题目的 `Enter` 函数。当前 5 道题的默认 `Enter` 都会调用 `Car_StartLineFollow()`，所以确认任意题后都会先运行现有基础循迹功能。
 
-长按 EC11 按键 1 秒会退出当前题目，调用该题的 `Exit`，执行 `Car_Stop()`，然后回到选题界面。后续比赛题目确定后，把对应逻辑填到 `competition_tasks.c` 里的 `Problem1_Enter/Task/Exit` 到 `Problem8_Enter/Task/Exit` 中即可。
+长按 EC11 按键 1 秒会退出当前题目，调用该题的 `Exit`，执行 `Car_Stop()`，然后回到选题界面。后续比赛题目确定后，把对应逻辑填到 `competition_tasks.c` 里的 `Problem1_Enter/Task/Exit` 到 `Problem5_Enter/Task/Exit` 中即可。
 
 控制周期由 `TIMG12` 产生，周期为 10ms。每次中断调用：
 

@@ -24,15 +24,6 @@ static void Problem4_Exit(void);
 static void Problem5_Enter(void);
 static void Problem5_Task(void);
 static void Problem5_Exit(void);
-static void Problem6_Enter(void);
-static void Problem6_Task(void);
-static void Problem6_Exit(void);
-static void Problem7_Enter(void);
-static void Problem7_Task(void);
-static void Problem7_Exit(void);
-static void Problem8_Enter(void);
-static void Problem8_Task(void);
-static void Problem8_Exit(void);
 static void CompetitionTasks_DefaultEnter(void);
 static void CompetitionTasks_DefaultTask(void);
 static void CompetitionTasks_DefaultExit(void);
@@ -44,9 +35,6 @@ static const CompetitionTaskFn s_enter_table[COMPETITION_TASK_COUNT] =
   Problem3_Enter,
   Problem4_Enter,
   Problem5_Enter,
-  Problem6_Enter,
-  Problem7_Enter,
-  Problem8_Enter,
 };
 
 static const CompetitionTaskFn s_task_table[COMPETITION_TASK_COUNT] =
@@ -56,9 +44,6 @@ static const CompetitionTaskFn s_task_table[COMPETITION_TASK_COUNT] =
   Problem3_Task,
   Problem4_Task,
   Problem5_Task,
-  Problem6_Task,
-  Problem7_Task,
-  Problem8_Task,
 };
 
 static const CompetitionTaskFn s_exit_table[COMPETITION_TASK_COUNT] =
@@ -68,9 +53,6 @@ static const CompetitionTaskFn s_exit_table[COMPETITION_TASK_COUNT] =
   Problem3_Exit,
   Problem4_Exit,
   Problem5_Exit,
-  Problem6_Exit,
-  Problem7_Exit,
-  Problem8_Exit,
 };
 
 void CompetitionTasks_Enter(uint8_t problem)
@@ -175,51 +157,6 @@ static void Problem5_Task(void)
 }
 
 static void Problem5_Exit(void)
-{
-  CompetitionTasks_DefaultExit();
-}
-
-static void Problem6_Enter(void)
-{
-  CompetitionTasks_DefaultEnter();
-}
-
-static void Problem6_Task(void)
-{
-  CompetitionTasks_DefaultTask();
-}
-
-static void Problem6_Exit(void)
-{
-  CompetitionTasks_DefaultExit();
-}
-
-static void Problem7_Enter(void)
-{
-  CompetitionTasks_DefaultEnter();
-}
-
-static void Problem7_Task(void)
-{
-  CompetitionTasks_DefaultTask();
-}
-
-static void Problem7_Exit(void)
-{
-  CompetitionTasks_DefaultExit();
-}
-
-static void Problem8_Enter(void)
-{
-  CompetitionTasks_DefaultEnter();
-}
-
-static void Problem8_Task(void)
-{
-  CompetitionTasks_DefaultTask();
-}
-
-static void Problem8_Exit(void)
 {
   CompetitionTasks_DefaultExit();
 }

@@ -11,7 +11,7 @@ extern "C" {
 
 #include <stdint.h>
 
-#define COMPETITION_TASK_COUNT 8U
+#define COMPETITION_TASK_COUNT 5U
 
 void CompetitionTasks_Enter(uint8_t problem);
 void CompetitionTasks_Task(uint8_t problem);
