@@ -20,8 +20,8 @@
       .motor { fill: #3f51e8; stroke: #3f51e8; }
       .enc { fill: #00acc1; stroke: #00acc1; }
       .line { fill: #009688; stroke: #009688; }
-      .can { fill: #795548; stroke: #795548; }
       .oled { fill: #2e7d32; stroke: #2e7d32; }
+      .ec11 { fill: #7e57c2; stroke: #7e57c2; }
       .io { fill: #8bc34a; stroke: #8bc34a; }
       .adc { fill: #f06292; stroke: #f06292; }
       .servo { fill: #ab47bc; stroke: #ab47bc; }
@@ -117,7 +117,9 @@
     <path class="wire line" d="M500 508 C420 508 392 508 354 508"/><rect class="line" x="198" y="492" width="156" height="30" rx="6"/><text class="labelText" x="276" y="512" text-anchor="middle">循迹 S4 中间</text>
     <path class="wire motor" d="M500 550 C420 550 392 550 354 550"/><rect class="motor" x="178" y="534" width="176" height="30" rx="6"/><text class="labelText" x="266" y="554" text-anchor="middle">驱动板 AIN1</text>
     <path class="wire i2c" d="M500 592 C420 592 392 592 354 592"/><rect class="i2c" x="198" y="576" width="156" height="30" rx="6"/><text class="labelText" x="276" y="596" text-anchor="middle">IMU SCL</text>
+    <path class="wire oled" d="M198 592 L174 592"/><rect class="oled" x="22" y="576" width="150" height="30" rx="6"/><text class="labelText" x="97" y="596" text-anchor="middle">OLED SCL</text>
     <path class="wire i2c" d="M500 634 C420 634 392 634 354 634"/><rect class="i2c" x="198" y="618" width="156" height="30" rx="6"/><text class="labelText" x="276" y="638" text-anchor="middle">IMU SDA</text>
+    <path class="wire oled" d="M198 634 L174 634"/><rect class="oled" x="22" y="618" width="150" height="30" rx="6"/><text class="labelText" x="97" y="638" text-anchor="middle">OLED SDA</text>
     <path class="wire uart" d="M500 676 C420 676 392 676 354 676"/><rect class="uart" x="198" y="660" width="156" height="30" rx="6"/><text class="labelText" x="276" y="680" text-anchor="middle">蓝牙 RX</text>
     <path class="wire uart" d="M500 718 C420 718 392 718 354 718"/><rect class="uart" x="198" y="702" width="156" height="30" rx="6"/><text class="labelText" x="276" y="722" text-anchor="middle">蓝牙 TX</text>
     <path class="wire enc" d="M500 760 C420 760 392 760 354 760"/><rect class="enc" x="178" y="744" width="176" height="30" rx="6"/><text class="labelText" x="266" y="764" text-anchor="middle">驱动板 E1A/左A</text>
@@ -125,6 +127,7 @@
   </g>
 
   <g id="labels-right">
+    <path class="wire ec11" d="M680 172 C760 172 792 172 826 172"/><rect class="ec11" x="826" y="156" width="166" height="30" rx="6"/><text class="labelText" x="909" y="176" text-anchor="middle">EC11 SW/按键</text>
     <path class="wire uart" d="M680 214 C760 214 792 214 826 214"/><rect class="uart" x="826" y="198" width="150" height="30" rx="6"/><text class="labelText" x="901" y="218" text-anchor="middle">预留UARTB TX</text>
     <path class="wire uart" d="M680 256 C760 256 792 256 826 256"/><rect class="uart" x="826" y="240" width="150" height="30" rx="6"/><text class="labelText" x="901" y="260" text-anchor="middle">预留UARTB RX</text>
     <path class="wire uart" d="M680 298 C760 298 792 298 826 298"/><rect class="uart" x="826" y="282" width="150" height="30" rx="6"/><text class="labelText" x="901" y="302" text-anchor="middle">预留UARTA RX</text>
@@ -136,17 +139,18 @@
     <path class="wire line" d="M680 592 C760 592 792 592 826 592"/><rect class="line" x="826" y="576" width="150" height="30" rx="6"/><text class="labelText" x="901" y="596" text-anchor="middle">循迹 S3 左1</text>
     <path class="wire line" d="M680 634 C760 634 792 634 826 634"/><rect class="line" x="826" y="618" width="150" height="30" rx="6"/><text class="labelText" x="901" y="638" text-anchor="middle">循迹 S2 左2</text>
     <path class="wire line" d="M680 676 C760 676 792 676 826 676"/><rect class="line" x="826" y="660" width="150" height="30" rx="6"/><text class="labelText" x="901" y="680" text-anchor="middle">循迹 S1 最左</text>
-    <path class="wire oled" d="M680 718 C760 718 792 718 826 718"/><rect class="oled" x="826" y="702" width="150" height="30" rx="6"/><text class="labelText" x="901" y="722" text-anchor="middle">板载 OLED 灯</text>
-    <path class="wire can" d="M680 760 C760 760 792 760 826 760"/><rect class="can" x="826" y="744" width="150" height="30" rx="6"/><text class="labelText" x="901" y="764" text-anchor="middle">CAN RX</text>
-    <path class="wire can" d="M680 802 C760 802 792 802 826 802"/><rect class="can" x="826" y="786" width="150" height="30" rx="6"/><text class="labelText" x="901" y="806" text-anchor="middle">CAN TX</text>
+    <path class="wire io" d="M680 718 C760 718 792 718 826 718"/><rect class="io" x="826" y="702" width="150" height="30" rx="6"/><text class="labelText" x="901" y="722" text-anchor="middle">板载 LED 灯</text>
+    <path class="wire ec11" d="M680 760 C760 760 792 760 826 760"/><rect class="ec11" x="826" y="744" width="150" height="30" rx="6"/><text class="labelText" x="901" y="764" text-anchor="middle">EC11 A相</text>
+    <path class="wire ec11" d="M680 802 C760 802 792 802 826 802"/><rect class="ec11" x="826" y="786" width="150" height="30" rx="6"/><text class="labelText" x="901" y="806" text-anchor="middle">EC11 B相</text>
   </g>
 
-  <g transform="translate(190 944)">
+  <g transform="translate(120 944)">
     <rect class="i2c" x="0" y="0" width="18" height="18" rx="4"/><text class="small" x="26" y="14">I2C/IMU</text>
-    <rect class="uart" x="116" y="0" width="18" height="18" rx="4"/><text class="small" x="142" y="14">蓝牙/串口</text>
-    <rect class="motor" x="244" y="0" width="18" height="18" rx="4"/><text class="small" x="270" y="14">电机驱动</text>
-    <rect class="enc" x="374" y="0" width="18" height="18" rx="4"/><text class="small" x="400" y="14">编码器</text>
-    <rect class="line" x="484" y="0" width="18" height="18" rx="4"/><text class="small" x="510" y="14">循迹模块</text>
-    <rect class="can" x="612" y="0" width="18" height="18" rx="4"/><text class="small" x="638" y="14">CAN</text>
+    <rect class="oled" x="106" y="0" width="18" height="18" rx="4"/><text class="small" x="132" y="14">OLED屏</text>
+    <rect class="uart" x="208" y="0" width="18" height="18" rx="4"/><text class="small" x="234" y="14">蓝牙/串口</text>
+    <rect class="motor" x="336" y="0" width="18" height="18" rx="4"/><text class="small" x="362" y="14">电机驱动</text>
+    <rect class="enc" x="466" y="0" width="18" height="18" rx="4"/><text class="small" x="492" y="14">电机编码器</text>
+    <rect class="line" x="604" y="0" width="18" height="18" rx="4"/><text class="small" x="630" y="14">循迹模块</text>
+    <rect class="ec11" x="734" y="0" width="18" height="18" rx="4"/><text class="small" x="760" y="14">EC11旋钮</text>
   </g>
 </svg>
