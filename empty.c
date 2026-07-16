@@ -37,7 +37,7 @@ int main(void)
 
     g_car.left.target_counts = 26;
     g_car.right.target_counts = 26;
-    Car_Stop();
+    g_car.mode = 3;
 
     while (1) {
         MPU6050_Task();
