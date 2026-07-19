@@ -25,6 +25,7 @@ typedef struct
 extern volatile OLED_t g_oled;
 
 void OLED_Init(void);
+void OLED_Task(uint32_t tick);
 void OLED_Clear(void);
 void OLED_Update(void);
 void OLED_DrawAscii(uint8_t x, uint8_t page, const char *text);

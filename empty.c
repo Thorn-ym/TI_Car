@@ -41,6 +41,7 @@ int main(void)
 
     while (1) {
         MPU6050_Task();
+        OLED_Task(g_car.control_tick);
         EC11_Task();
         ProblemMenu_Task();
         Debug_UART_Task();

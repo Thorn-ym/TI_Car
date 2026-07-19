@@ -13,6 +13,9 @@
 #define OLED_ADDR_HIGH      0x3DU
 #define OLED_BUFFER_SIZE    ((OLED_WIDTH * OLED_HEIGHT) / 8U)
 #define OLED_MENU_ITEM_COUNT 5U
+#define OLED_STARTUP_DELAY_CYCLES (CPUCLK_FREQ / 10U)
+#define OLED_SERVICE_INTERVAL_TICKS 50U
+#define OLED_CMD_NOP        0xE3U
 
 #define OLED_GLYPH_XUAN     0U
 #define OLED_GLYPH_ZE       1U
@@ -30,6 +33,7 @@ volatile OLED_t g_oled =
 };
 
 static uint8_t s_buffer[OLED_BUFFER_SIZE];
+static uint32_t s_last_service_tick = 0U;
 
 /* Kept for the generic small numeric text helper. */
 static const uint8_t s_font5x7[11][5] =
@@ -209,6 +213,8 @@ static bool OLED_WriteCommand(uint8_t cmd);
 static bool OLED_WriteCommands(const uint8_t *cmds, uint16_t len);
 static bool OLED_WriteData(const uint8_t *data, uint16_t len);
 static bool OLED_SelectAddress(uint8_t address);
+static bool OLED_TryInitialize(void);
+static void OLED_MarkOffline(void);
 static void OLED_SetPixel(uint8_t x, uint8_t y);
 static void OLED_InvertPixel(uint8_t x, uint8_t y);
 static void OLED_DrawMenuGlyph12(uint8_t x, uint8_t y, const uint16_t *glyph);
@@ -219,24 +225,32 @@ void OLED_Init(void)
 {
   g_oled.present = 0U;
   g_oled.initialized = 0U;
-
-  if (!OLED_SelectAddress(OLED_ADDR_LOW) &&
-      !OLED_SelectAddress(OLED_ADDR_HIGH))
-  {
-    g_oled.error_count++;
-    return;
-  }
-
-  if (!OLED_WriteCommands(s_oled_init_cmds, (uint16_t)sizeof(s_oled_init_cmds)))
-  {
-    g_oled.error_count++;
-    g_oled.present = 0U;
-    return;
-  }
-
+  s_last_service_tick = 0U;
   OLED_Clear();
-  OLED_Update();
-  g_oled.initialized = 1U;
+
+  delay_cycles(OLED_STARTUP_DELAY_CYCLES);
+  (void)OLED_TryInitialize();
+}
+
+void OLED_Task(uint32_t tick)
+{
+  if ((uint32_t)(tick - s_last_service_tick) < OLED_SERVICE_INTERVAL_TICKS)
+  {
+    return;
+  }
+  s_last_service_tick = tick;
+
+  if ((g_oled.present == 0U) || (g_oled.initialized == 0U))
+  {
+    (void)OLED_TryInitialize();
+    return;
+  }
+
+  if (!OLED_WriteCommand(OLED_CMD_NOP))
+  {
+    g_oled.error_count++;
+    OLED_MarkOffline();
+  }
 }
 
 void OLED_Clear(void)
@@ -270,6 +284,7 @@ void OLED_Update(void)
         !OLED_WriteData(&s_buffer[(uint16_t)page * OLED_WIDTH], OLED_WIDTH))
     {
       g_oled.error_count++;
+      OLED_MarkOffline();
       return;
     }
   }
@@ -444,6 +459,40 @@ static bool OLED_SelectAddress(uint8_t address)
 
   g_oled.present = 0U;
   return false;
+}
+
+static bool OLED_TryInitialize(void)
+{
+  OLED_MarkOffline();
+
+  if (!OLED_SelectAddress(OLED_ADDR_LOW) &&
+      !OLED_SelectAddress(OLED_ADDR_HIGH))
+  {
+    g_oled.error_count++;
+    return false;
+  }
+
+  if (!OLED_WriteCommands(s_oled_init_cmds, (uint16_t)sizeof(s_oled_init_cmds)))
+  {
+    g_oled.error_count++;
+    OLED_MarkOffline();
+    return false;
+  }
+
+  OLED_Update();
+  if (g_oled.present == 0U)
+  {
+    return false;
+  }
+
+  g_oled.initialized = 1U;
+  return true;
+}
+
+static void OLED_MarkOffline(void)
+{
+  g_oled.present = 0U;
+  g_oled.initialized = 0U;
 }
 
 static void OLED_SetPixel(uint8_t x, uint8_t y)
