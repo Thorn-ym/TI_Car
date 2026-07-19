@@ -872,7 +872,7 @@ VOFA ON
 | `S1~S4` 同时触发 | `g_line.right_angle_direction = 1` | 左直角 |
 | `S4~S7` 同时触发 | `g_line.right_angle_direction = -1` | 右直角 |
 
-同一方向的直角信号必须连续出现 2 个 10ms 控制周期才会锁存，单次干扰不会启动转弯。因为循迹模块在车头，代码仍保留前探补偿：锁存方向后，以相同轮速继续直行 `right_angle_approach_counts` 个编码器计数，使驱动轮接近拐点。
+同一方向的直角信号必须连续出现 2 个 10ms 控制周期才会锁存，单次干扰不会启动转弯。代码保留可选的前探补偿：锁存方向后，以相同轮速继续直行 `right_angle_approach_counts` 个编码器计数，使驱动轮接近拐点。当前默认值为 `0`，因此默认不额外前探，锁存方向后直接进入转弯阶段。
 
 前探结束后，转弯状态机按下面顺序工作：
 
@@ -893,7 +893,7 @@ MPU6050 不再是启动直角转弯的必要条件。模块有效时，代码仍
 |---|---:|---|
 | `g_car.line.right_angle_assist_enable` | `1` | 是否开启直角闭环状态机，改成 `0` 时仅使用普通循迹逻辑 |
 | `g_car.line.right_angle_detect_confirm_ticks` | `2` | 直角方向连续确认次数 |
-| `g_car.line.right_angle_approach_counts` | `250` | 检测到直角后继续直行的编码器补偿距离 |
+| `g_car.line.right_angle_approach_counts` | `0` | 检测到直角后继续直行的编码器补偿距离，`0` 表示不额外前探 |
 | `g_car.line.right_angle_approach_speed_counts` | `18` | 前探补偿阶段的直行速度 |
 | `g_car.line.right_angle_approach_travel_counts` | `0` | 已经完成的前探补偿距离，用于观察调试 |
 | `g_car.line.right_angle_approach_timeout_ticks` | `45` | 前探补偿超时周期数，45 个 10ms 周期约 450ms |
@@ -901,12 +901,12 @@ MPU6050 不再是启动直角转弯的必要条件。模块有效时，代码仍
 | `g_car.line.right_angle_center_confirm_ticks` | `3` | 新线连续捕获次数 |
 | `g_car.line.right_angle_recovery_speed_counts` | `18` | 捕线后的低速 PID 恢复速度 |
 | `g_car.line.right_angle_recovery_ticks` | `5` | 低速恢复周期数，默认约 50ms |
-| `g_car.line.right_angle_target_deg` | `90.0f` | MPU 有效时的最大转角保护，不是正常退出条件 |
+| `g_car.line.right_angle_target_deg` | `150.0f` | MPU 有效时的最大转角保护，不是正常退出条件 |
 | `g_car.line.right_angle_center_min_deg` | `45.0f` | 兼容保留字段，新状态机不使用此字段退出 |
 | `g_car.line.right_angle_gyro_deadband_dps` | `2.0f` | 陀螺仪角速度死区，小于该值不累计角度 |
 | `g_car.line.right_angle_base_counts` | `14` | 与差速量相加得到外轮速度 |
 | `g_car.line.right_angle_turn_counts` | `4` | 与基础量相加，默认外轮速度为 `18` |
-| `g_car.line.right_angle_timeout_ticks` | `100` | 转向阶段超时保护，默认约 1s |
+| `g_car.line.right_angle_timeout_ticks` | `250` | 转向阶段超时保护，默认约 2.5s |
 
 调试时建议先观察这些变量：
 
@@ -931,19 +931,19 @@ g_car.line.gyro_z
 
 `right_angle_state` 的含义为：`0` 空闲、`1` 前探、`2` 等待旧线消失、`3` 搜索新线、`4` 低速恢复。发送 `SHOW` 也会回传这些计数和累计角度。
 
-如果前探结束位置仍偏早，可以增大：
+当前默认关闭前探补偿。如果检测到直角后立即转向的位置偏早，可以从较小的正数开始增加：
 
 ```c
-g_car.line.right_angle_approach_counts = 280;
+g_car.line.right_angle_approach_counts = 20;
 ```
 
 也可以通过蓝牙发送：
 
 ```text
-APPROACH 280
+APPROACH 20
 ```
 
-如果小车稍微冲过拐点，减小 `right_angle_approach_counts`，例如 `APPROACH 220`；前探太快则使用 `APPSPD 14`。前探位置目前可用时，先保持默认 `250`，不要同时修改多个变量。
+如果小车稍微冲过拐点，就减小 `right_angle_approach_counts`，直至恢复为默认值 `0`；前探太快则使用 `APPSPD 14`。调试时每次只修改一个变量，并逐步增加前探距离。
 
 如果转弯动作太慢，可提高外轮目标：
 
