@@ -809,6 +809,33 @@ static void Debug_UART_SendStatus(void)
   Debug_UART_SendTextIfAllowed(buffer, pos);
 
   pos = 0U;
+  pos = Debug_UART_AppendString(buffer, pos, "CORNER STATE=");
+  pos = Debug_UART_AppendInt(buffer, pos,
+                             (int32_t)g_car.line.right_angle_state);
+  pos = Debug_UART_AppendString(buffer, pos, " DIR=");
+  pos = Debug_UART_AppendInt(buffer, pos,
+                             (int32_t)g_car.line.right_angle_assist_direction);
+  pos = Debug_UART_AppendString(buffer, pos, " DET=");
+  pos = Debug_UART_AppendInt(buffer, pos,
+                             (int32_t)g_car.line.right_angle_detect_count);
+  pos = Debug_UART_AppendString(buffer, pos, " CLEAR=");
+  pos = Debug_UART_AppendInt(buffer, pos,
+      (int32_t)g_car.line.right_angle_old_line_clear_count);
+  pos = Debug_UART_AppendString(buffer, pos, " SEEN=");
+  pos = Debug_UART_AppendInt(buffer, pos,
+                             (int32_t)g_car.line.right_angle_center_seen_count);
+  pos = Debug_UART_AppendString(buffer, pos, " REC=");
+  pos = Debug_UART_AppendInt(buffer, pos,
+                             (int32_t)g_car.line.right_angle_recovery_count);
+  pos = Debug_UART_AppendString(buffer, pos, " YAW=");
+  pos = Debug_UART_AppendFloat(buffer, pos,
+                               g_car.line.right_angle_yaw_deg);
+  pos = Debug_UART_AppendString(buffer, pos, "\r\n");
+  buffer[pos] = '\0';
+
+  Debug_UART_SendTextIfAllowed(buffer, pos);
+
+  pos = 0U;
   pos = Debug_UART_AppendString(buffer, pos, "LEFT P=");
   pos = Debug_UART_AppendFloat(buffer, pos, g_car.left.pid.kp);
   pos = Debug_UART_AppendString(buffer, pos, " I=");

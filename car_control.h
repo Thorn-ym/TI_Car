@@ -31,6 +31,15 @@ typedef enum
   CAR_MODE_LINE_FOLLOW = 3
 } CarMode_t;
 
+typedef enum
+{
+  CAR_RIGHT_ANGLE_STATE_IDLE = 0,
+  CAR_RIGHT_ANGLE_STATE_APPROACH = 1,
+  CAR_RIGHT_ANGLE_STATE_LEAVE_OLD_LINE = 2,
+  CAR_RIGHT_ANGLE_STATE_FIND_NEW_LINE = 3,
+  CAR_RIGHT_ANGLE_STATE_RECOVER = 4
+} CarRightAngleState_t;
+
 typedef struct
 {
   float kp;
@@ -82,15 +91,24 @@ typedef struct
   uint32_t right_angle_timeout_ticks;
   uint32_t right_angle_approach_start_tick;
   uint32_t right_angle_approach_timeout_ticks;
+  CarRightAngleState_t right_angle_state;
   uint8_t right_angle_assist_enable;
   uint8_t right_angle_assist_active;
   uint8_t right_angle_approach_active;
   uint8_t right_angle_cooldown;
   int8_t right_angle_assist_direction;
   int8_t right_angle_approach_direction;
+  int8_t right_angle_detect_direction;
+  uint8_t right_angle_detect_count;
+  uint8_t right_angle_detect_confirm_ticks;
+  uint8_t right_angle_old_line_clear_count;
+  uint8_t right_angle_old_line_clear_confirm_ticks;
   uint8_t right_angle_center_seen_count;
   uint8_t right_angle_cooldown_center_count;
   uint8_t right_angle_center_confirm_ticks;
+  uint8_t right_angle_recovery_count;
+  uint8_t right_angle_recovery_ticks;
+  int32_t right_angle_recovery_speed_counts;
   uint8_t line_lost_stop;
 } CarLineFollow_t;
 

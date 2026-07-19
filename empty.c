@@ -30,7 +30,7 @@ int main(void)
     g_car.right.pid.ki = 0.28f;
     g_car.right.pid.kd = 18;
 
-    g_car.left.invert_motor = 1U;
+    g_car.left.invert_motor = 0U;
     g_car.left.invert_encoder = 0U;
     g_car.right.invert_motor = 1U;
     g_car.right.invert_encoder = 1U;

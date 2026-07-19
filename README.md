@@ -862,63 +862,64 @@ VOFA ON
 
 方向反时不需要改 MPU6050 接线，也不需要重新安装传感器，只需要把 `G` 的符号改成负数。调参建议从 `0.02` 这种小值开始，逐步增加；如果 `G` 太大，小车会因为陀螺仪补偿过强而抖动。
 
-### MPU6050 辅助直角转弯逻辑与调参
+### 直角转弯闭环状态机与调参
 
-直角转弯有两层逻辑。第一层仍然是七路循迹模块识别直角，不改变原来的检测方式：
+直角转弯首先由七路循迹模块识别，检测方式保持不变：
 
 | 触发条件 | 方向变量 | 含义 |
 |---|---:|---|
 | `S1~S4` 同时触发 | `g_line.right_angle_direction = 1` | 左直角 |
 | `S4~S7` 同时触发 | `g_line.right_angle_direction = -1` | 右直角 |
 
-第二层是前探补偿。因为循迹模块在车头，驱动轮和转向中心在车身后部，检测到直角时不能立刻转弯。代码会先锁存直角方向，然后让小车继续直行 `g_car.line.right_angle_approach_counts` 个编码器计数，使驱动轮接近弯角后再开始转弯。前探阶段左右轮目标速度相同，速度为 `g_car.line.right_angle_approach_speed_counts`。
+同一方向的直角信号必须连续出现 2 个 10ms 控制周期才会锁存，单次干扰不会启动转弯。因为循迹模块在车头，代码仍保留前探补偿：锁存方向后，以相同轮速继续直行 `right_angle_approach_counts` 个编码器计数，使驱动轮接近拐点。
 
-第三层是 MPU6050 辅助。只有 `g_mpu6050.present = 1` 且 `g_mpu6050.valid = 1` 时，前探补偿结束后才会进入辅助转弯。辅助期间代码不直接控制 PWM，而是设置左右轮速度 PID 的目标速度：
+前探结束后，转弯状态机按下面顺序工作：
 
-```c
-turn = direction * g_car.line.right_angle_turn_counts;
-left_target = g_car.line.right_angle_base_counts - turn;
-right_target = g_car.line.right_angle_base_counts + turn;
-```
+1. 内侧轮强制停转，外侧轮以 `right_angle_base_counts + right_angle_turn_counts` 的目标速度前进。默认外轮目标为 `18`，即左转 `0 / 18`、右转 `18 / 0`。
+2. 等待 `S3/S4/S5` 连续 2 次全部离开入弯旧线。没有完成这一步时，即使中间探头有信号也不会认为已经出弯。
+3. 旧线消失后，等待 `S3/S4/S5` 重新连续 3 次看到窄线，同时要求当前不是 `S1~S4` 或 `S4~S7` 的直角宽线。
+4. 捕获新线后以基础速度 `18` 运行 5 个控制周期的普通循迹 PID，再恢复原来的基础速度。
 
-默认 `base = 14`、`turn = 4`，所以左直角时目标速度为 `10 / 18`，右直角时目标速度为 `18 / 10`。这两个数是编码器速度目标 `target_counts`，不是 PWM。
+旧逻辑在累计约 45 度后，只要中间任意探头仍看到入弯旧线就可能提前结束，所以修改最大角度或最大时间看起来几乎没有效果。新状态机必须先确认旧线消失，再接受重新出现的中线信号，从判定上消除了这个提前退出路径。
 
-辅助转弯期间，代码每 10ms 在 `Car_ControlStep()` 中用 `g_car.line.gyro_z` 积分估算已经转过的角度。`abs(gyro_z) < 2.0 deg/s` 时按 0 处理，避免静止噪声慢慢累计角度。满足下面任一条件就退出辅助：
+MPU6050 不再是启动直角转弯的必要条件。模块有效时，代码仍积分 `gyro_z`，但 `right_angle_target_deg` 只作为最大转角保护；模块缺失或数据无效时，传感器闭环和超时保护仍然工作。达到最大角度或超时时，如果仍看到黑线就交回普通 PID，完全丢线则立即停轮。
 
-| 退出条件 | 说明 |
-|---|---|
-| `right_angle_yaw_deg >= right_angle_target_deg` | 已经转到目标角度 |
-| 转过至少 `right_angle_center_min_deg`，且 `S3/S4/S5` 连续看到线 | 提前捕捉到出弯后的中线 |
-| 超过 `right_angle_timeout_ticks` | 防止一直转 |
-| MPU6050 变为无效 | 不继续使用错误的陀螺仪数据 |
-
-退出后会进入 `right_angle_cooldown`，避免同一个直角因为传感器信号持续触发而重复进入辅助。只有 `right_angle_detected = 0`，并且 `S3/S4/S5` 连续 3 次看到线后，才允许下一次直角辅助。
+退出后继续使用 `right_angle_cooldown`，只有直角宽线消失且中间探头连续确认后才允许下一次触发。
 
 常用参数在 `car_control.c` 的 `g_car.line` 初始化里，也可以在 CCS/Ozone 的 Watch 窗口临时修改：
 
 | 参数 | 默认值 | 作用 |
 |---|---:|---|
-| `g_car.line.right_angle_assist_enable` | `1` | 是否开启 MPU6050 直角辅助，改成 `0` 可退回旧直角逻辑 |
-| `g_car.line.right_angle_approach_counts` | `180` | 检测到直角后继续直行的编码器补偿距离，车越长通常需要越大 |
+| `g_car.line.right_angle_assist_enable` | `1` | 是否开启直角闭环状态机，改成 `0` 时仅使用普通循迹逻辑 |
+| `g_car.line.right_angle_detect_confirm_ticks` | `2` | 直角方向连续确认次数 |
+| `g_car.line.right_angle_approach_counts` | `250` | 检测到直角后继续直行的编码器补偿距离 |
 | `g_car.line.right_angle_approach_speed_counts` | `18` | 前探补偿阶段的直行速度 |
 | `g_car.line.right_angle_approach_travel_counts` | `0` | 已经完成的前探补偿距离，用于观察调试 |
 | `g_car.line.right_angle_approach_timeout_ticks` | `45` | 前探补偿超时周期数，45 个 10ms 周期约 450ms |
-| `g_car.line.right_angle_target_deg` | `60.0f` | 目标转角，越大转得越多，越小越早退出 |
-| `g_car.line.right_angle_center_min_deg` | `45.0f` | 至少转过多少度后才允许用中线提前退出 |
+| `g_car.line.right_angle_old_line_clear_confirm_ticks` | `2` | 中间探头连续离开旧线的确认次数 |
+| `g_car.line.right_angle_center_confirm_ticks` | `3` | 新线连续捕获次数 |
+| `g_car.line.right_angle_recovery_speed_counts` | `18` | 捕线后的低速 PID 恢复速度 |
+| `g_car.line.right_angle_recovery_ticks` | `5` | 低速恢复周期数，默认约 50ms |
+| `g_car.line.right_angle_target_deg` | `90.0f` | MPU 有效时的最大转角保护，不是正常退出条件 |
+| `g_car.line.right_angle_center_min_deg` | `45.0f` | 兼容保留字段，新状态机不使用此字段退出 |
 | `g_car.line.right_angle_gyro_deadband_dps` | `2.0f` | 陀螺仪角速度死区，小于该值不累计角度 |
-| `g_car.line.right_angle_base_counts` | `14` | 直角辅助基础速度 |
-| `g_car.line.right_angle_turn_counts` | `4` | 直角辅助差速量 |
-| `g_car.line.right_angle_timeout_ticks` | `70` | 超时退出周期数，70 个 10ms 周期约 700ms |
-| `g_car.line.right_angle_center_confirm_ticks` | `3` | 中线连续确认次数，防止扫到杂线就退出 |
+| `g_car.line.right_angle_base_counts` | `14` | 与差速量相加得到外轮速度 |
+| `g_car.line.right_angle_turn_counts` | `4` | 与基础量相加，默认外轮速度为 `18` |
+| `g_car.line.right_angle_timeout_ticks` | `100` | 转向阶段超时保护，默认约 1s |
 
 调试时建议先观察这些变量：
 
 ```c
 g_car.line.right_angle_assist_active
 g_car.line.right_angle_assist_direction
+g_car.line.right_angle_state
 g_car.line.right_angle_approach_active
 g_car.line.right_angle_approach_direction
 g_car.line.right_angle_approach_travel_counts
+g_car.line.right_angle_detect_count
+g_car.line.right_angle_old_line_clear_count
+g_car.line.right_angle_center_seen_count
+g_car.line.right_angle_recovery_count
 g_car.line.right_angle_yaw_deg
 g_car.line.left_target_counts
 g_car.line.right_target_counts
@@ -927,40 +928,30 @@ g_mpu6050.valid
 g_car.line.gyro_z
 ```
 
-如果小车还是转早，说明前探补偿距离还不够，优先增大：
+`right_angle_state` 的含义为：`0` 空闲、`1` 前探、`2` 等待旧线消失、`3` 搜索新线、`4` 低速恢复。发送 `SHOW` 也会回传这些计数和累计角度。
+
+如果前探结束位置仍偏早，可以增大：
 
 ```c
-g_car.line.right_angle_approach_counts = 220;
+g_car.line.right_angle_approach_counts = 280;
 ```
 
 也可以通过蓝牙发送：
 
 ```text
-APPROACH 220
+APPROACH 280
 ```
 
-如果小车进入直角前等待太久、冲过拐点后才转，减小 `right_angle_approach_counts`，例如 `APPROACH 140`。如果前探阶段速度太快导致入弯不稳定，降低 `right_angle_approach_speed_counts`，例如 `APPSPD 14`。
+如果小车稍微冲过拐点，减小 `right_angle_approach_counts`，例如 `APPROACH 220`；前探太快则使用 `APPSPD 14`。前探位置目前可用时，先保持默认 `250`，不要同时修改多个变量。
 
-如果前探距离已经合适，但出弯仍然转向太多，优先减小目标角度：
+如果转弯动作太慢，可提高外轮目标：
 
 ```c
-g_car.line.right_angle_target_deg = 56.0f;
+g_car.line.right_angle_base_counts = 16;
+g_car.line.right_angle_turn_counts = 4;
 ```
 
-如果车是猛地甩过去，而不是慢慢转过头，就继续把转弯动作调柔：
-
-```c
-g_car.line.right_angle_base_counts = 12;
-g_car.line.right_angle_turn_counts = 3;
-```
-
-如果小车转不够，出弯压内侧，优先增大目标角度：
-
-```c
-g_car.line.right_angle_target_deg = 64.0f;
-```
-
-必要时再略微增加 `right_angle_turn_counts` 或降低普通循迹基础速度。调直角辅助时不要优先改 `gyro_damping`，它主要影响普通循迹 PID，不是直角辅助转弯的主要参数。
+如果动作过猛，则降低这两个量之和。正常退出由传感器重新捕线决定，不应再通过改变 `right_angle_target_deg` 来调正常转弯角度；该值只用于 MPU 有效时的异常保护。
 
 一般现象和处理：
 
